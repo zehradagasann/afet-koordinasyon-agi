@@ -1,1 +1,1 @@
-# afet-otonom-asistan
+# afet-otonom
