@@ -18,7 +18,7 @@ def generate_mock_data(num_records: int = 500):
 
         request_list = []
         for _ in range(num_records):
-            request_item = models.AfetzedeTalep(
+            request_item = models.DisasterRequest(
                 need_type=random.choice(CATEGORIES),
                 latitude=round(random.uniform(LAT_MIN, LAT_MAX), 6),
                 longitude=round(random.uniform(LON_MIN, LON_MAX), 6)

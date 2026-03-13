@@ -4,8 +4,8 @@ from database import Base
 import datetime
 import uuid
 
-class AfetzedeTalep(Base):
-    __tablename__ = "afetzede_talepleri"
+class DisasterRequest(Base):
+    __tablename__ = "disaster_requests"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     latitude = Column(Float)

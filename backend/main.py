@@ -24,7 +24,7 @@ def read_root():
 
 @app.post("/talep-gonder", response_model=schemas.RequestResponse)
 def create_request(request_data: schemas.RequestCreate, db: Session = Depends(get_db)):
-    db_request = models.AfetzedeTalep(**request_data.dict())
+    db_request = models.DisasterRequest(**request_data.dict())
     db.add(db_request)
     db.commit()
     db.refresh(db_request)
@@ -33,7 +33,7 @@ def create_request(request_data: schemas.RequestCreate, db: Session = Depends(ge
 @app.get("/talepler/oncelikli", response_model=List[schemas.PrioritizedRequestResponse])
 def get_prioritized_requests(db: Session = Depends(get_db)):
     # Veritabanından tüm talepleri çek
-    all_requests = db.query(models.AfetzedeTalep).all()
+    all_requests = db.query(models.DisasterRequest).all()
 
     results = []
     for req in all_requests:
