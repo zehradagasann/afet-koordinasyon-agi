@@ -46,5 +46,8 @@ def get_prioritized_requests(db: Session = Depends(get_db)):
             "dynamic_priority_score": score
         })
 
-    results.sort(key=lambda x: x["dynamic_priority_score"], reverse=True)
+    # 1. En yüksek dinamik puandan en düşüğe sırala.
+    # 2. Eğer puanlar eşitse (Örn: ikisi de 1000 olduysa), en eski tarihli olanı (ilk bekleyeni) öne al.
+    results.sort(key=lambda x: (-x["dynamic_priority_score"], x["created_at"]))
+    
     return results

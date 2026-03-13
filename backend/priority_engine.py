@@ -72,4 +72,11 @@ def calculate_dynamic_priority(need_type: str, created_at: datetime) -> float:
     time_ratio = wait_hours / max_tolerance
     time_bonus = (base_score * TIME_SENSITIVITY_LAMBDA * time_ratio) * (1 + weight)
 
-    return round(base_score + time_bonus, 1)
+    # Arka plan tavan puan sınırı (1000)
+    MAX_POSSIBLE_SCORE = 1000.0
+    raw_score = min(base_score + time_bonus, MAX_POSSIBLE_SCORE)
+    
+    # Kullanıcıya (Frontend) 100 üzerinden %'lik skor dön (0-100 skalası)
+    scaled_score = (raw_score / MAX_POSSIBLE_SCORE) * 100.0
+    
+    return round(scaled_score, 1)
