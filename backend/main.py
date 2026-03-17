@@ -51,3 +51,86 @@ def get_prioritized_requests(db: Session = Depends(get_db)):
     results.sort(key=lambda x: (-x["dynamic_priority_score"], x["created_at"]))
     
     return results
+from pydantic import BaseModel
+
+class VehicleCreate(BaseModel):
+    latitude: float
+    longitude: float
+    vehicle_type: str
+    capacity: str
+
+
+@app.post("/arac-ekle")
+def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(get_db)):
+    new_vehicle = models.ReliefVehicle(
+        latitude=vehicle.latitude,
+        longitude=vehicle.longitude,
+        vehicle_type=vehicle.vehicle_type,
+        capacity=vehicle.capacity
+    )
+
+    db.add(new_vehicle)
+    db.commit()
+    db.refresh(new_vehicle)
+
+    return new_vehicle
+@app.get("/araclar")
+def get_vehicles(db: Session = Depends(get_db)):
+    vehicles = db.query(models.ReliefVehicle).all()
+    return vehicles
+
+from math import sqrt
+
+@app.get("/yakin-araclar")
+def get_nearby_vehicles(lat: float, lon: float, db: Session = Depends(get_db)):
+    vehicles = db.query(models.ReliefVehicle).all()
+
+    nearby = []
+
+    for v in vehicles:
+        distance = sqrt((v.latitude - lat)**2 + (v.longitude - lon)**2)
+
+        if distance < 0.1:  # yaklaşık 5-10 km gibi
+            nearby.append(v)
+
+    return nearby
+
+from sqlalchemy import text
+
+@app.get("/yakin-araclar-sql")
+def get_nearby_sql(lat: float, lon: float, db: Session = Depends(get_db)):
+
+    query = text("""
+        SELECT * FROM relief_vehicles
+    """)
+
+    result = db.execute(query)
+
+    vehicles = []
+
+    for row in result:
+      vehicles.append(dict(row._mapping))
+
+    return vehicles
+from sqlalchemy import text
+
+@app.get("/yakin-araclar-postgis")
+def get_nearby_postgis(lat: float, lon: float, db: Session = Depends(get_db)):
+
+    query = text("""
+        SELECT *
+        FROM relief_vehicles
+        WHERE ST_DWithin(
+            location,
+            ST_SetSRID(ST_MakePoint(:lon, :lat), 4326),
+            5000
+        )
+    """)
+
+    result = db.execute(query, {"lat": lat, "lon": lon})
+
+    vehicles = []
+    for row in result:
+        vehicles.append(dict(row._mapping))
+
+    return vehicles

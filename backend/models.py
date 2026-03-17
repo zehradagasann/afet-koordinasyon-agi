@@ -12,3 +12,12 @@ class DisasterRequest(Base):
     longitude = Column(Float)
     need_type = Column(String)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
+class ReliefVehicle(Base):
+    __tablename__ = "relief_vehicles"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    latitude = Column(Float)
+    longitude = Column(Float)
+    vehicle_type = Column(String)
+    capacity = Column(String)
+    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
