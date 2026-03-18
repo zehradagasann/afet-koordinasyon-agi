@@ -134,3 +134,32 @@ def get_nearby_postgis(lat: float, lon: float, db: Session = Depends(get_db)):
         vehicles.append(dict(row._mapping))
 
     return vehicles
+
+from pydantic import BaseModel
+
+class VehicleUpdate(BaseModel):
+    tent_count: int
+    food_count: int
+    water_count: int
+    medical_count: int
+    blanket_count: int
+
+
+@app.put("/arac-guncelle/{vehicle_id}")
+def update_vehicle(vehicle_id: str, data: VehicleUpdate, db: Session = Depends(get_db)):
+    
+    vehicle = db.query(models.ReliefVehicle).filter(models.ReliefVehicle.id == vehicle_id).first()
+    
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+
+    vehicle.tent_count = data.tent_count
+    vehicle.food_count = data.food_count
+    vehicle.water_count = data.water_count
+    vehicle.medical_count = data.medical_count
+    vehicle.blanket_count = data.blanket_count
+
+    db.commit()
+    db.refresh(vehicle)
+
+    return vehicle
