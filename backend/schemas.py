@@ -22,3 +22,23 @@ class PrioritizedRequestResponse(RequestBase):
     dynamic_priority_score: float
 
     model_config = {"from_attributes": True}
+
+
+class ClusterLocation(BaseModel):
+    district: str | None = None
+    neighborhood: str | None = None
+    street: str | None = None
+    full_address: str | None = None
+
+
+class TaskPackageResponse(BaseModel):
+    cluster_id: int
+    need_type: str
+    cluster_name: str
+    center_latitude: float
+    center_longitude: float
+    location: ClusterLocation
+    request_count: int
+    average_priority_score: float
+    priority_level: str
+    request_ids: list[str]

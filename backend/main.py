@@ -1,11 +1,12 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
-from typing import List
+from typing import List, Optional
 import models
 import schemas
 from priority_engine import calculate_dynamic_priority
+from clustering_engine import generate_task_packages
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -59,3 +60,18 @@ def get_prioritized_requests(db: Session = Depends(get_db)):
     results.sort(key=lambda x: (-x["dynamic_priority_score"], x["created_at"]))
     
     return results
+
+
+@app.get("/requests/task-packages", response_model=List[schemas.TaskPackageResponse])
+def get_task_packages(
+    need_type: Optional[str] = Query(None, description="İhtiyaç tipine göre filtrele (ör: su, gida, medikal)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Görev 3.6 & 3.7 — Mekansal Kümeleme ve Görev Paketi Üretimi.
+
+    Aynı tip ve 500m yakınlıktaki talepleri DBSCAN ile kümeleyip,
+    ters geocoding ile adres bilgisi eklenmiş görev paketleri döner.
+    """
+    packages = generate_task_packages(db, need_type_filter=need_type)
+    return packages
