@@ -29,7 +29,7 @@ def get_db():
 def read_root():
     return {"message": "Afet Koordinasyon API çalışıyor"}
 
-@app.post("/talep-gonder", response_model=schemas.RequestResponse)
+@app.post("/requests", response_model=schemas.RequestResponse)
 def create_request(request_data: schemas.RequestCreate, db: Session = Depends(get_db)):
     db_request = models.DisasterRequest(**request_data.dict())
     db.add(db_request)
@@ -37,7 +37,7 @@ def create_request(request_data: schemas.RequestCreate, db: Session = Depends(ge
     db.refresh(db_request)
     return db_request
 
-@app.get("/talepler/oncelikli", response_model=List[schemas.PrioritizedRequestResponse])
+@app.get("/requests/prioritized", response_model=List[schemas.PrioritizedRequestResponse])
 def get_prioritized_requests(db: Session = Depends(get_db)):
     all_requests = db.query(models.DisasterRequest).all()
 

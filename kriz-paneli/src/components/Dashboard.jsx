@@ -20,7 +20,7 @@ export default function Dashboard() {
 useEffect(() => {
     const canliVerileriGetir = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/talepler/oncelikli');
+        const response = await fetch('http://127.0.0.1:8000/requests/prioritized');
         if (!response.ok) throw new Error('Veri alınamadı!');
         const data = await response.json();
         setIhbarlar(data); 
