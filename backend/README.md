@@ -191,7 +191,7 @@ Kümeleme algoritmasını çalıştırır, sonuçları DB'ye yazar ve döndürü
 
 Sadece `status=pending` olan talepler kümelenir. `assigned` veya `resolved` talepler kümelemeye dahil edilmez.
 
-**Yanıt (201):** Oluşturulan kümelerin listesi (aşağıdaki formatta).
+**Yanıt (201):** Oluşturulan kümelerin listesi. Yanıt formatı `GET /task-packages` ile aynıdır (aşağıya bakınız).
 
 ---
 
