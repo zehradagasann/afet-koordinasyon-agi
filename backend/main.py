@@ -1,77 +1,25 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from database import engine, SessionLocal
-from typing import List, Optional
+from database import engine
 import models
-import schemas
-from priority_engine import calculate_dynamic_priority
-from clustering_engine import generate_task_packages
+from routers import requests, clusters
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(title="Afet Koordinasyon API", version="1.0.0")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"], 
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+app.include_router(requests.router)
+app.include_router(clusters.router)
+
 
 @app.get("/")
-def read_root():
-    return {"message": "Afet Koordinasyon API çalışıyor"}
-
-@app.post("/requests", response_model=schemas.RequestResponse)
-def create_request(request_data: schemas.RequestCreate, db: Session = Depends(get_db)):
-    db_request = models.DisasterRequest(**request_data.dict())
-    db.add(db_request)
-    db.commit()
-    db.refresh(db_request)
-    return db_request
-
-@app.get("/requests/prioritized", response_model=List[schemas.PrioritizedRequestResponse])
-def get_prioritized_requests(db: Session = Depends(get_db)):
-    all_requests = db.query(models.DisasterRequest).all()
-
-    results = []
-    for req in all_requests:
-        score = calculate_dynamic_priority(req.need_type, req.created_at)
-
-        results.append({
-            "id": req.id,
-            "latitude": req.latitude,
-            "longitude": req.longitude,
-            "need_type": req.need_type,
-            "created_at": req.created_at,
-            "dynamic_priority_score": score
-        })
-
-    # 1. En yüksek dinamik puandan en düşüğe sırala.
-    # 2. Eğer puanlar eşitse (Örn: ikisi de 1000 olduysa), en eski tarihli olanı (ilk bekleyeni) öne al.
-    results.sort(key=lambda x: (-x["dynamic_priority_score"], x["created_at"]))
-    
-    return results
-
-
-@app.get("/requests/task-packages", response_model=List[schemas.TaskPackageResponse])
-def get_task_packages(
-    need_type: Optional[str] = Query(None, description="İhtiyaç tipine göre filtrele (ör: su, gida, medikal)"),
-    db: Session = Depends(get_db),
-):
-    """
-    Görev 3.6 & 3.7 — Mekansal Kümeleme ve Görev Paketi Üretimi.
-
-    Aynı tip ve 500m yakınlıktaki talepleri DBSCAN ile kümeleyip,
-    ters geocoding ile adres bilgisi eklenmiş görev paketleri döner.
-    """
-    packages = generate_task_packages(db, need_type_filter=need_type)
-    return packages
+def health_check():
+    return {"status": "ok", "message": "Afet Koordinasyon API çalışıyor"}
