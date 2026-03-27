@@ -1,14 +1,23 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
-from typing import List
+from typing import List, Optional
 import models
 import schemas
 from priority_engine import calculate_dynamic_priority
+from clustering_engine import generate_task_packages
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"],
+)
 
 def get_db():
     db = SessionLocal()
@@ -21,7 +30,7 @@ def get_db():
 def read_root():
     return {"message": "Afet Koordinasyon API çalışıyor"}
 
-@app.post("/talep-gonder", response_model=schemas.RequestResponse)
+@app.post("/requests", response_model=schemas.RequestResponse)
 def create_request(request_data: schemas.RequestCreate, db: Session = Depends(get_db)):
     db_request = models.DisasterRequest(**request_data.dict())
     db.add(db_request)
@@ -29,7 +38,7 @@ def create_request(request_data: schemas.RequestCreate, db: Session = Depends(ge
     db.refresh(db_request)
     return db_request
 
-@app.get("/talepler/oncelikli", response_model=List[schemas.PrioritizedRequestResponse])
+@app.get("/requests/prioritized", response_model=List[schemas.PrioritizedRequestResponse])
 def get_prioritized_requests(db: Session = Depends(get_db)):
     all_requests = db.query(models.DisasterRequest).all()
 
@@ -163,3 +172,18 @@ def update_vehicle(vehicle_id: str, data: VehicleUpdate, db: Session = Depends(g
     db.refresh(vehicle)
 
     return vehicle
+
+
+@app.get("/requests/task-packages", response_model=List[schemas.TaskPackageResponse])
+def get_task_packages(
+    need_type: Optional[str] = Query(None, description="İhtiyaç tipine göre filtrele (ör: su, gida, medikal)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Görev 3.6 & 3.7 — Mekansal Kümeleme ve Görev Paketi Üretimi.
+
+    Aynı tip ve 500m yakınlıktaki talepleri DBSCAN ile kümeleyip,
+    ters geocoding ile adres bilgisi eklenmiş görev paketleri döner.
+    """
+    packages = generate_task_packages(db, need_type_filter=need_type)
+    return packages

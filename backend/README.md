@@ -27,7 +27,7 @@ Sunucu durumunu kontrol eder.
 
 ---
 
-### `POST /talep-gonder`
+### `POST /requests`
 Yeni bir afetzede talebi oluşturur ve veritabanına kaydeder.
 
 **Gönderilecek JSON:**
@@ -52,7 +52,7 @@ Yeni bir afetzede talebi oluşturur ve veritabanına kaydeder.
 
 ---
 
-### `GET /talepler/oncelikli`
+### `GET /requests/prioritized`
 Tüm talepleri **dinamik öncelik puanına göre en acilden en aza** sıralayarak döndürür. Puan, taban değer + bekleme süresine dayalı Zaman Sönümleme (Time Decay / DPS) formülüyle hesaplanır.
 
 **Yanıt (200):**
