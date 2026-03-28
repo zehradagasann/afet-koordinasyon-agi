@@ -1,7 +1,4 @@
-
-
-from sqlalchemy import Column, String, Float, DateTime, Integer, Enum
-
+from sqlalchemy import Boolean, Column, String, Float, DateTime, Integer, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from database import Base
 import datetime
@@ -31,7 +28,9 @@ class DisasterRequest(Base):
     description = Column(String, nullable=True)
     status = Column(Enum(RequestStatus), default=RequestStatus.pending, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
-    
+    is_verified = Column(Boolean, default=False)
+
+
 class ReliefVehicle(Base):
     __tablename__ = "relief_vehicles"
 
@@ -41,10 +40,9 @@ class ReliefVehicle(Base):
     vehicle_type = Column(String)
     capacity = Column(String)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
-
-    tent_count = Column(Integer,default=0)
-    food_count = Column(Integer,default=0)
-    water_count = Column(Integer,default=0)
+    tent_count = Column(Integer, default=0)
+    food_count = Column(Integer, default=0)
+    water_count = Column(Integer, default=0)
     medical_count = Column(Integer, default=0)
     blanket_count = Column(Integer, default=0)
 
@@ -68,6 +66,6 @@ class Cluster(Base):
     pending_count = Column(Integer, default=0)
     assigned_count = Column(Integer, default=0)
     resolved_count = Column(Integer, default=0)
-    is_noise_cluster = Column(Integer, default=0)  # 0/1 bool
+    is_noise_cluster = Column(Integer, default=0)
     status = Column(Enum(ClusterStatus), default=ClusterStatus.active, nullable=False)
     generated_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
