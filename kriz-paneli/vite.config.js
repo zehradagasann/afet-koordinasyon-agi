@@ -7,7 +7,19 @@ export default defineConfig({
   server: {
     proxy: {
       '/talepler': {
-        target: 'http://localhost:8000', 
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/requests': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/buyuk-depremler': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/health': {
+        target: 'http://localhost:8000',
         changeOrigin: true,
       }
     }

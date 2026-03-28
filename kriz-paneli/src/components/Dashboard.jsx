@@ -1,6 +1,6 @@
 import 'leaflet/dist/leaflet.css';
-import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 const kirmiziPin = new L.Icon({
@@ -11,6 +11,15 @@ const kirmiziPin = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
+
+// Harita uçuş kontrolü için iç bileşen
+function MapController({ flyTo }) {
+  const map = useMap();
+  useEffect(() => {
+    if (flyTo) map.flyTo(flyTo, 13, { duration: 1.5 });
+  }, [flyTo, map]);
+  return null;
+}
 
 const NEED_TYPE_LABELS = {
   arama_kurtarma: 'Arama Kurtarma',
@@ -25,7 +34,7 @@ const NEED_TYPE_LABELS = {
 };
 
 export default function Dashboard() {
-  const mapRef = useRef(null);
+  const [flyTo, setFlyTo] = useState(null);
   const [ihbarlar, setIhbarlar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,17 +57,7 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (mapRef.current) {
-      setTimeout(() => mapRef.current.invalidateSize(), 400);
-    }
-  }, [ihbarlar]);
-
-  const konumaGit = (lat, lng) => {
-    if (mapRef.current) {
-      mapRef.current.flyTo([lat, lng], 13, { duration: 1.5 });
-    }
-  };
+  const konumaGit = (lat, lng) => setFlyTo([lat, lng]);
 
   const verified = ihbarlar.filter(i => i.is_verified).length;
   const acilGorevler = ihbarlar.filter(i => i.dynamic_priority_score >= 80);
@@ -102,11 +101,11 @@ export default function Dashboard() {
           <h3 className="text-lg font-bold">Harita Canlı İzleme</h3>
           <div className="relative h-[450px] w-full rounded-2xl overflow-hidden shadow-inner">
             <MapContainer
-              ref={mapRef}
               center={[39.0, 35.0]}
               zoom={6}
               style={{ height: '100%', width: '100%' }}
             >
+              <MapController flyTo={flyTo} />
               <TileLayer
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://carto.com/">CARTO</a>'
