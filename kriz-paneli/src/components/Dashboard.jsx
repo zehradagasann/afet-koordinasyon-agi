@@ -1,13 +1,15 @@
 import 'leaflet/dist/leaflet.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 
-const kirmiziPin = L.divIcon({
-  className: 'custom-icon',
-  html: `<div style="width:14px;height:14px;background:#ef4444;border-radius:50%;box-shadow:0 0 0 6px rgba(239,68,68,0.25);animation:pulse 1.5s infinite;"></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7]
+const kirmiziPin = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
 });
 
 const NEED_TYPE_LABELS = {
@@ -23,21 +25,44 @@ const NEED_TYPE_LABELS = {
 };
 
 export default function Dashboard() {
+  const mapRef = useRef(null);
   const [ihbarlar, setIhbarlar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('/talepler/oncelikli')
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then(data => { setIhbarlar(data); setLoading(false); })
-      .catch(e => { setError(e.message); setLoading(false); });
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/requests/prioritized');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        setIhbarlar(data);
+        setLoading(false);
+      } catch (e) {
+        setError(e.message);
+        setLoading(false);
+      }
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 3000);
+    return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (mapRef.current) {
+      setTimeout(() => mapRef.current.invalidateSize(), 400);
+    }
+  }, [ihbarlar]);
+
+  const konumaGit = (lat, lng) => {
+    if (mapRef.current) {
+      mapRef.current.flyTo([lat, lng], 13, { duration: 1.5 });
+    }
+  };
+
   const verified = ihbarlar.filter(i => i.is_verified).length;
+  const acilGorevler = ihbarlar.filter(i => i.dynamic_priority_score >= 80);
+  const normalIhbarlar = ihbarlar.filter(i => i.dynamic_priority_score < 80);
 
   return (
     <div className="flex-1 overflow-y-auto p-8 space-y-8">
@@ -75,8 +100,9 @@ export default function Dashboard() {
         {/* Harita */}
         <div className="xl:col-span-2 space-y-4">
           <h3 className="text-lg font-bold">Harita Canlı İzleme</h3>
-          <div className="relative h-[420px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner">
+          <div className="relative h-[450px] w-full rounded-2xl overflow-hidden shadow-inner">
             <MapContainer
+              ref={mapRef}
               center={[39.0, 35.0]}
               zoom={6}
               style={{ height: '100%', width: '100%' }}
@@ -86,11 +112,7 @@ export default function Dashboard() {
                 attribution='&copy; <a href="https://carto.com/">CARTO</a>'
               />
               {ihbarlar.map((ihbar) => (
-                <Marker
-                  key={ihbar.id}
-                  position={[ihbar.latitude, ihbar.longitude]}
-                  icon={kirmiziPin}
-                >
+                <Marker key={ihbar.id} position={[ihbar.latitude, ihbar.longitude]} icon={kirmiziPin}>
                   <Popup>
                     <b>Tür:</b> {NEED_TYPE_LABELS[ihbar.need_type] || ihbar.need_type}<br />
                     <b>Aciliyet:</b> {ihbar.dynamic_priority_score}<br />
@@ -102,44 +124,62 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Canlı İhbar Akışı */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold">Canlı İhbar Akışı</h3>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-y-auto max-h-[420px] divide-y divide-slate-100 dark:divide-slate-800">
-            {loading && (
-              <div className="p-6 text-center text-slate-400 text-sm">Yükleniyor...</div>
-            )}
-            {!loading && ihbarlar.length === 0 && (
-              <div className="p-6 text-center text-slate-400 text-sm">Kayıt bulunamadı.</div>
-            )}
-            {ihbarlar.slice(0, 50).map((ihbar) => (
-              <div key={ihbar.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
-                <div className="flex justify-between items-start">
-                  <p className="text-sm font-bold text-slate-900 dark:text-white capitalize">
-                    {NEED_TYPE_LABELS[ihbar.need_type] || ihbar.need_type}
-                  </p>
-                  <span className="text-[10px] text-slate-500">
-                    {new Date(ihbar.created_at).toLocaleDateString('tr-TR')}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  📍 {ihbar.latitude.toFixed(3)}, {ihbar.longitude.toFixed(3)}
-                </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-[10px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full font-bold">
-                    🔥 {ihbar.dynamic_priority_score}
-                  </span>
-                  {ihbar.is_verified && (
-                    <span className="text-[10px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full font-bold">
-                      ✓ Doğrulandı
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Sağ Panel */}
+        <div className="space-y-6">
 
+          {/* Acil Görevler */}
+          <div className="space-y-3">
+            <h3 className="text-lg font-bold text-red-600 flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+              Acil Görevler
+            </h3>
+            <div className="grid gap-3">
+              {acilGorevler.slice(0, 3).map((ihbar) => (
+                <div
+                  key={ihbar.id}
+                  onClick={() => konumaGit(ihbar.latitude, ihbar.longitude)}
+                  className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-600 p-4 rounded-r-xl shadow-md cursor-pointer hover:scale-[1.02] transition-transform"
+                >
+                  <h4 className="font-black text-red-800 dark:text-red-400 uppercase text-xs">
+                    🚨 {(NEED_TYPE_LABELS[ihbar.need_type] || ihbar.need_type).toUpperCase()}
+                  </h4>
+                  <p className="text-[11px] text-red-700 dark:text-red-300 mt-1">
+                    📍 {ihbar.latitude.toFixed(3)}, {ihbar.longitude.toFixed(3)} — Puan: {ihbar.dynamic_priority_score}
+                  </p>
+                </div>
+              ))}
+              {acilGorevler.length === 0 && !loading && (
+                <p className="text-sm text-slate-400">Acil görev yok.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Normal İhbarlar */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400">Diğer İhbarlar</h3>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-y-auto max-h-[280px] divide-y divide-slate-100 dark:divide-slate-800">
+              {loading && <div className="p-4 text-center text-slate-400 text-sm">Yükleniyor...</div>}
+              {normalIhbarlar.slice(0, 50).map((ihbar) => (
+                <div
+                  key={ihbar.id}
+                  onClick={() => konumaGit(ihbar.latitude, ihbar.longitude)}
+                  className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer flex justify-between items-center"
+                >
+                  <span className="text-xs text-slate-600 dark:text-slate-400">
+                    📍 {NEED_TYPE_LABELS[ihbar.need_type] || ihbar.need_type}
+                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${ihbar.is_verified ? 'bg-green-500/10 text-green-500' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'}`}>
+                    {ihbar.is_verified ? '✓ Doğrulandı' : 'Şüpheli'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
