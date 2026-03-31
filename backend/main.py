@@ -1,4 +1,5 @@
 from live_earthquake_data import get_last_24h_earthquakes, get_major_earthquakes_last_3_months
+from fastapi import WebSocket, WebSocketDisconnect
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -33,6 +34,28 @@ try:
     app.include_router(clusters_router.router)
 except ImportError:
     pass
+
+# Bağlı kullanıcıları yöneten class
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections = []
+
+    # Yeni bağlantı ekleme
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()  # bağlantıyı kabul et
+        self.active_connections.append(websocket)
+
+    # Bağlantı kopunca çıkar
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    # Tüm kullanıcılara mesaj gönder
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            await connection.send_json(message)
+
+# manager instance oluştur
+manager = ConnectionManager()
 
 # --- YARDIMCI FONKSİYONLAR ---
 
@@ -93,6 +116,20 @@ def _create_request(request_data: schemas.RequestCreate, db: Session):
     db.add(db_request)
     db.commit()
     db.refresh(db_request)
+    import asyncio
+    asyncio.run_coroutine_threadsafe(
+        manager.broadcast({
+            "event": "NEW_REQUEST",
+            "data": {
+                "id": db_request.id,
+                "need_type": db_request.need_type,
+                "latitude": db_request.latitude,
+                "longitude": db_request.longitude,
+                "is_verified": verified
+            }
+        }),
+        asyncio.get_event_loop()
+    )
     return db_request
 
 # Eski endpoint (geriye dönük uyumluluk)
@@ -197,3 +234,15 @@ def assign_vehicle(data: schemas.AssignVehicleRequest, db: Session = Depends(get
     db.commit()
     db.refresh(vehicle)
     return {"message": "Vehicle assigned and stock updated", "remaining_tents": vehicle.tent_count}
+
+# WebSocket bağlantılarını kabul eden ve yöneten ana endpoint
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+
+    try:
+        while True:
+            await websocket.receive_text()
+
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
