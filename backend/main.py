@@ -14,6 +14,7 @@ import math
 from math import sqrt
 from datetime import datetime, timezone
 
+
 # Veritabanı tablolarını oluştur
 models.Base.metadata.create_all(bind=engine)
 
@@ -44,6 +45,8 @@ class ConnectionManager:
     async def connect(self, websocket: WebSocket):
         await websocket.accept()  # bağlantıyı kabul et
         self.active_connections.append(websocket)
+        print("BAĞLANTI EKLENDİ:", len(self.active_connections))  # 
+
 
     # Bağlantı kopunca çıkar
     def disconnect(self, websocket: WebSocket):
@@ -51,6 +54,7 @@ class ConnectionManager:
 
     # Tüm kullanıcılara mesaj gönder
     async def broadcast(self, message: dict):
+        print("AKTİF BAĞLANTI SAYISI:", len(self.active_connections)) 
         for connection in self.active_connections:
             await connection.send_json(message)
 
@@ -105,20 +109,25 @@ def create_request_legacy(request_data: schemas.RequestCreate, db: Session = Dep
     return _create_request(request_data, db)
 
 # Yeni endpoint
-@app.post("/requests", response_model=schemas.RequestResponse)
-def create_request(request_data: schemas.RequestCreate, db: Session = Depends(get_db)):
-    return _create_request(request_data, db)
 
-def _create_request(request_data: schemas.RequestCreate, db: Session):
+@app.post("/requests")
+async def create_request(request_data: schemas.RequestCreate, db: Session = Depends(get_db)):
+   # return  _create_request(request_data, db)
+
+    #def db_work():    
+#def _create_request(request_data: schemas.RequestCreate, db: Session):
     earthquakes = get_last_24h_earthquakes()
     verified = is_near_earthquake(request_data.latitude, request_data.longitude, earthquakes)
     db_request = models.DisasterRequest(**request_data.model_dump(), is_verified=verified)
     db.add(db_request)
     db.commit()
     db.refresh(db_request)
-    import asyncio
-    asyncio.run_coroutine_threadsafe(
-        manager.broadcast({
+       
+    print("BURAYA GELDİ")
+    print("AKTİF CONNECTION SAYISI:", len(manager.active_connections))#yeni
+     # 🔥 EN KRİTİK
+    for conn in manager.active_connections:
+        await conn.send_json({
             "event": "NEW_REQUEST",
             "data": {
                 "id": db_request.id,
@@ -127,9 +136,8 @@ def _create_request(request_data: schemas.RequestCreate, db: Session):
                 "longitude": db_request.longitude,
                 "is_verified": verified
             }
-        }),
-        asyncio.get_event_loop()
-    )
+        })
+    
     return db_request
 
 # Eski endpoint (geriye dönük uyumluluk)
@@ -236,13 +244,13 @@ def assign_vehicle(data: schemas.AssignVehicleRequest, db: Session = Depends(get
     return {"message": "Vehicle assigned and stock updated", "remaining_tents": vehicle.tent_count}
 
 # WebSocket bağlantılarını kabul eden ve yöneten ana endpoint
+import asyncio
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
 
     try:
         while True:
-            await websocket.receive_text()
-
+            await asyncio.sleep(1)  #  sadece açık tutar
     except WebSocketDisconnect:
         manager.disconnect(websocket)
