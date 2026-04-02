@@ -43,6 +43,7 @@ def get_prioritized(db: Session = Depends(get_db)):
             "description": req.description,
             "status": req.status,
             "created_at": req.created_at,
+            "is_verified": req.is_verified,
             "dynamic_priority_score": score,
         })
     results.sort(key=lambda x: (-x["dynamic_priority_score"], x["created_at"]))
