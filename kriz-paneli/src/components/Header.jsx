@@ -4,7 +4,7 @@ export default function Header({ toggleSidebar, user, onLogout, onProfileClick }
   return (
     <header className="h-20 bg-white dark:bg-slate-900/50 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 shrink-0">
       
-      {/* Sol Taraf: Menü Butonu + Logo + Başlık */}
+      {/* Menü Butonu + Logo + Başlık */}
       <div className="flex items-center gap-6">
         
         {/* Menü Butonu */}
@@ -18,7 +18,7 @@ export default function Header({ toggleSidebar, user, onLogout, onProfileClick }
 
         {/* RESQ LOGOSU */}
         <div className="flex flex-col items-center justify-center select-none cursor-pointer scale-[0.50] origin-center -my-6 z-10">
-            {/* Kalkan İkonu */}
+            {}
             <div className="relative w-16 h-[72px] -mb-3 z-10">
                 <div className="w-full h-full rounded-[20%_20%_50%_50%/10%_10%_40%_40%] bg-gradient-to-br from-slate-100 to-slate-300 dark:from-slate-200 dark:to-slate-400 border-[3px] border-slate-400 shadow-lg transform scale-y-105"></div>
                 <svg className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-auto" viewBox="0 0 100 60">
