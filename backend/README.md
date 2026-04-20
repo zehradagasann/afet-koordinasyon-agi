@@ -1,327 +1,412 @@
-# Afet Koordinasyon API (Backend)
+# Afet Koordinasyon API - Backend
 
-Afet yönetimi ve koordinasyonu için geliştirilmiş **FastAPI** + **PostgreSQL** tabanlı REST API.
+FastAPI + PostgreSQL tabanlı afet yönetim sistemi backend'i. AI destekli araç önerisi, dinamik önceliklendirme ve coğrafi kümeleme özellikleri sunar.
 
----
+## 🚀 Hızlı Başlangıç
 
-## Kurulum
+### Docker ile Kurulum (Önerilen)
 
-1. Bağımlılıkları yükle:
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+# Ana dizinden docker-compose ile başlat
+cd ..
+docker-compose up -d
 
-2. `.env` dosyası oluştur:
-   ```env
-   DATABASE_URL="postgresql://kullanici:sifre@host:port/veritabani"
-   ```
+# Sadece backend'i test et
+docker-compose logs -f backend
+```
 
-3. Veritabanı tablolarını oluştur:
-   ```bash
-   python -c "from database import engine; from models import Base; Base.metadata.create_all(engine)"
-   ```
+### Manuel Kurulum
 
-4. (Opsiyonel) Mock veri yükle:
-   ```bash
-   python mock_data_generator.py --clustered
-   ```
+#### 1. Bağımlılıkları Yükle
+```bash
+pip install -r requirements.txt
+```
 
-5. Sunucuyu başlat:
-   ```bash
-   uvicorn main:app --reload
-   ```
+### 2. Ortam Değişkenlerini Ayarla
+`.env` dosyası oluşturun:
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/afet_koordinasyon
+SECRET_KEY=your-secret-key-change-in-production
+```
 
-Swagger dokümantasyonu: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+### 3. Veritabanını Hazırla
+```bash
+# PostgreSQL'de veritabanı oluştur
+createdb afet_koordinasyon
 
----
+# PostGIS extension'ı ekle
+psql -d afet_koordinasyon -c "CREATE EXTENSION postgis;"
 
-## Dosya Yapısı
+# Migration'ları çalıştır
+psql -U user -d afet_koordinasyon -f migrations/add_base_speed_to_vehicles.sql
+psql -U user -d afet_koordinasyon -f migrations/add_vehicle_recommendation_fields.sql
+```
+
+### 4. Sunucuyu Başlat
+```bash
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+- API: http://localhost:8000
+- Swagger Dokümantasyon: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+## 📋 Özellikler
+
+### Temel Özellikler
+- ✅ **JWT Authentication** - Token tabanlı güvenli kimlik doğrulama
+- ✅ **Role-based Access Control** - Rol bazlı yetkilendirme sistemi
+- ✅ **DBSCAN Clustering** - Coğrafi kümeleme algoritması
+- ✅ **Dynamic Priority Scoring** - Dinamik öncelik hesaplama
+- ✅ **Real-time Earthquake Verification** - Canlı deprem doğrulama
+- ✅ **Reverse Geocoding** - Koordinattan adres bulma
+- ✅ **WebSocket Support** - Gerçek zamanlı güncellemeler
+
+### Gelişmiş Özellikler
+- ✅ **Otonom Araç Önerisi Sistemi** - AI destekli MCDM algoritması
+- ✅ **Tahmini Varış Süresi (ETA)** - Gerçek zamanlı hesaplama
+
+## 🧪 Testler
+
+```bash
+# Tüm testleri çalıştır
+python -m pytest tests/
+
+# Kimlik doğrulama testleri
+python tests/test_auth.py
+
+# Araç önerisi ve ETA testleri
+python tests/test_vehicle_recommendation.py
+
+# Entegrasyon testleri
+python tests/test_integration.py
+```
+
+## 📚 API Endpoint'leri
+
+### Kimlik Doğrulama
+```bash
+POST   /auth/register          # Kullanıcı kaydı
+POST   /auth/login             # Kullanıcı girişi
+GET    /auth/me                # Mevcut kullanıcı bilgisi
+PUT    /auth/me                # Profil güncelleme
+```
+
+### Afet İhbarları
+```bash
+POST   /requests               # Yeni ihbar oluştur
+GET    /requests/prioritized   # Öncelikli ihbarları listele
+PUT    /requests/{id}/status   # İhbar durumunu güncelle
+```
+
+### Kümeler (Task Packages)
+```bash
+POST   /requests/task-packages/generate                    # Kümeleme çalıştır
+GET    /requests/task-packages                             # Kümeleri listele
+GET    /requests/task-packages/{id}                        # Küme detayı
+GET    /requests/task-packages/{id}/recommend-vehicles     # Araç önerisi
+POST   /requests/task-packages/{id}/assign-vehicle         # Araç atama ve ETA
+```
+
+### Araçlar
+```bash
+POST   /api/vehicles           # Yeni araç ekle
+GET    /api/vehicles           # Araçları listele
+GET    /api/vehicles/{id}      # Araç detayı
+PUT    /api/vehicles/{id}      # Araç güncelle
+DELETE /api/vehicles/{id}      # Araç sil
+```
+
+## 🎯 Otonom Araç Önerisi ve ETA Detayları
+
+### Araç Önerisi Sistemi
+Bir küme için en uygun aracı AI ile önerir.
+
+**Endpoint:**
+```bash
+GET /requests/task-packages/{cluster_id}/recommend-vehicles?top_n=3
+```
+
+**Algoritma:**
+- Aciliyet: %40
+- Mesafe/ETA: %27
+- Stok Yeterliliği: %18
+- Araç Hızı: %15
+
+**Örnek Yanıt:**
+```json
+{
+  "vehicle_id": "uuid",
+  "vehicle_type": "Kamyon",
+  "capacity": "10 Ton",
+  "score": 87.5,
+  "details": {
+    "distance_km": 5.2,
+    "eta_minutes": 8,
+    "available_stock": 100,
+    "required_quantity": 50
+  },
+  "recommendation_text": "Bu kümenin 50 çadır ihtiyacı var..."
+}
+```
+
+### ETA (Tahmini Varış Süresi)
+Araç atandığında otomatik ETA hesaplanır.
+
+**Endpoint:**
+```bash
+POST /requests/task-packages/{cluster_id}/assign-vehicle?vehicle_id={vehicle_id}
+```
+
+**Formül:**
+```
+ETA (dakika) = (Mesafe × 1.2) / Araç Hızı × 60
+```
+
+**Örnek Yanıt:**
+```json
+{
+  "message": "Araç başarıyla atandı",
+  "distance_km": 5.2,
+  "eta_minutes": 8,
+  "remaining_stock": 50,
+  "cluster_status": "resolved"
+}
+```
+
+## 📁 Proje Yapısı (Modüler Mimari)
 
 ```
 backend/
-├── main.py                  # Uygulama başlangıcı, middleware, router kayıtları
-├── database.py              # SQLAlchemy bağlantısı
-├── models.py                # ORM modelleri (DisasterRequest, Cluster)
-├── schemas.py               # Pydantic şemaları (request/response)
-├── priority_engine.py       # Dinamik önceliklendirme motoru (DPS)
-├── clustering_engine.py     # DBSCAN mekansal kümeleme motoru
-├── geocoder.py              # Ters geocoding (Nominatim / OpenStreetMap)
-├── mock_data_generator.py   # Test verisi üretici
-└── routers/
-    ├── requests.py          # /requests endpoint'leri
-    └── clusters.py          # /requests/task-packages endpoint'leri
+├── core/                                 # Merkezi Bağımlılıklar
+│   ├── __init__.py
+│   └── dependencies.py                   # Database session yönetimi
+│
+├── utils/                                # Yardımcı Fonksiyonlar
+│   ├── __init__.py
+│   ├── geo.py                           # Coğrafi hesaplamalar (Haversine, vb.)
+│   └── websocket.py                     # WebSocket bağlantı yönetimi
+│
+├── routers/                              # API Endpoint'leri
+│   ├── __init__.py
+│   ├── auth.py                           # Kimlik doğrulama
+│   ├── clusters.py                       # Kümeleme ve araç önerisi
+│   ├── requests.py                       # İhbar yönetimi
+│   └── vehicles.py                       # Araç CRUD
+│
+├── services/                             # İş Mantığı Servisleri
+│   ├── __init__.py
+│   ├── priority.py                      # Dinamik önceliklendirme
+│   ├── clustering.py                    # DBSCAN kümeleme algoritması
+│   └── vehicle_recommendation.py        # Araç önerisi ve ETA hesaplama
+│
+├── scripts/                              # Yardımcı Scriptler
+│   └── generate_mock_data.py            # Test verisi oluşturucu
+│
+├── tests/                                # Test Dosyaları
+│   ├── __init__.py
+│   ├── test_auth.py                      # Auth testleri
+│   ├── test_vehicle_recommendation.py    # Araç önerisi testleri
+│   └── test_integration.py               # Entegrasyon testleri
+│
+├── docs/                                 # Dokümantasyon
+│   ├── API.md                           # API referansı
+│   └── DATABASE_SCHEMA.md               # Veritabanı şeması
+│
+├── migrations/                           # SQL Migration'ları
+│   ├── add_base_speed_to_vehicles.sql
+│   └── add_vehicle_recommendation_fields.sql
+│
+├── models.py                             # SQLAlchemy Modelleri
+├── schemas.py                            # Pydantic Şemaları
+├── database.py                           # Veritabanı Bağlantısı
+│
+├── geocoder.py                           # Reverse Geocoding
+├── live_earthquake_data.py               # Canlı Deprem Verileri
+│
+├── main.py                               # FastAPI Uygulaması
+├── requirements.txt                      # Python Bağımlılıkları
+└── README.md                            
 ```
 
----
+### Modüler Yapı Avantajları
+- ✅ **Tek Sorumluluk İlkesi**: Her modül tek bir işten sorumlu
+- ✅ **Kod Tekrarı Yok**: Ortak fonksiyonlar merkezi konumda
+- ✅ **Kolay Test**: Her modül bağımsız test edilebilir
+- ✅ **Bakım Kolaylığı**: Değişiklikler tek yerden yapılır
+- ✅ **Ölçeklenebilir**: Yeni modüller kolayca eklenebilir
 
-## Veri Modelleri
+## 🔧 Algoritmalar
 
-### `DisasterRequest` Tablosu
-
-| Alan | Tip | Açıklama |
-|------|-----|----------|
-| `id` | UUID | Birincil anahtar |
-| `latitude` | Float | Enlem |
-| `longitude` | Float | Boylam |
-| `need_type` | String | İhtiyaç tipi |
-| `person_count` | Integer | Etkilenen kişi sayısı (varsayılan: 1) |
-| `description` | String | Opsiyonel açıklama notu |
-| `status` | Enum | `pending` / `assigned` / `resolved` |
-| `created_at` | DateTime | Oluşturulma zamanı (UTC) |
-
-### `Cluster` Tablosu
-
-| Alan | Tip | Açıklama |
-|------|-----|----------|
-| `id` | UUID | Birincil anahtar (kalıcı küme kimliği) |
-| `need_type` | String | İhtiyaç tipi |
-| `cluster_name` | String | Otomatik üretilen küme adı |
-| `center_latitude` | Float | Küme merkez enlem |
-| `center_longitude` | Float | Küme merkez boylam |
-| `district` | String | İlçe |
-| `neighborhood` | String | Mahalle |
-| `street` | String | Sokak |
-| `full_address` | String | Tam adres |
-| `request_count` | Integer | Kümedeki talep sayısı |
-| `total_persons_affected` | Integer | Toplam etkilenen kişi |
-| `average_priority_score` | Float | Ortalama öncelik puanı |
-| `priority_level` | String | Öncelik seviyesi |
-| `pending_count` | Integer | Bekleyen talep sayısı |
-| `assigned_count` | Integer | Atanmış talep sayısı |
-| `resolved_count` | Integer | Çözülmüş talep sayısı |
-| `is_noise_cluster` | Integer | Dağınık küme mi (0/1) |
-| `status` | Enum | `active` / `resolved` |
-| `generated_at` | DateTime | Küme oluşturulma zamanı |
-
-**Desteklenen `need_type` değerleri:**
-
-| Değer | Açıklama |
-|-------|----------|
-| `arama_kurtarma` | Arama Kurtarma |
-| `medikal` | Medikal |
-| `yangin` | Yangın Söndürme |
-| `enkaz` | Enkaz Kaldırma |
-| `su` | Su |
-| `barinma` | Barınma |
-| `gida` | Gıda |
-| `is_makinesi` | İş Makinesi |
-| `ulasim` | Ulaşım |
-
----
-
-## API Endpoint'leri
-
-### `GET /`
-Sunucu sağlık kontrolü.
-
-```json
-{ "status": "ok", "message": "Afet Koordinasyon API çalışıyor" }
+### 1. Dinamik Önceliklendirme
+```python
+def calculate_dynamic_priority(need_type, created_at):
+    base_score = NEED_TYPE_SCORES.get(need_type, 50)
+    time_factor = calculate_time_factor(created_at)
+    return base_score * time_factor
 ```
 
----
+**İhtiyaç Tipi Skorları:**
+- Arama Kurtarma: 100
+- Medikal: 90
+- Yangın: 85
+- Enkaz: 80
+- Su: 70
+- Barınma: 60
+- Gıda: 50
 
-### `POST /requests`
-Yeni talep oluşturur.
-
-**Body:**
-```json
-{
-  "latitude": 41.0082,
-  "longitude": 28.9784,
-  "need_type": "medikal",
-  "person_count": 3,
-  "description": "Yaralı var, ambulans gerekiyor"
-}
+### 2. DBSCAN Kümeleme
+```python
+clustering = DBSCAN(
+    eps=0.5,              # 500 metre yarıçap
+    min_samples=2,        # Minimum 2 ihbar
+    metric='haversine'    # Küresel mesafe
+)
 ```
 
-`person_count` ve `description` opsiyoneldir.
-
-**Yanıt (201):**
-```json
-{
-  "id": "uuid",
-  "latitude": 41.0082,
-  "longitude": 28.9784,
-  "need_type": "medikal",
-  "person_count": 3,
-  "description": "Yaralı var, ambulans gerekiyor",
-  "status": "pending",
-  "created_at": "2026-03-27T11:00:00Z"
-}
+### 3. Araç Önerisi (MCDM)
+```python
+total_score = (
+    urgency_score × 0.40 +
+    distance_score × 0.27 +
+    stock_score × 0.18 +
+    speed_score × 0.15
+)
 ```
 
----
-
-### `GET /requests/prioritized`
-Tüm talepleri dinamik öncelik puanına göre sıralı döndürür.
-
-**Yanıt:**
-```json
-[
-  {
-    "id": "uuid",
-    "latitude": 41.01,
-    "longitude": 29.02,
-    "need_type": "arama_kurtarma",
-    "person_count": 5,
-    "description": null,
-    "status": "pending",
-    "created_at": "2026-03-12T08:00:00Z",
-    "dynamic_priority_score": 85.5
-  }
-]
+### 4. ETA Hesaplama
+```python
+def calculate_eta(distance_km, vehicle_speed, priority_score):
+    speed = vehicle_speed
+    if priority_score >= 75:
+        speed *= 1.1  # Kritik durumlarda +10% hız
+    
+    adjusted_distance = distance_km * 1.2  # Afet düzeltmesi
+    eta_hours = adjusted_distance / speed
+    return int(eta_hours * 60)  # Dakikaya çevir
 ```
 
----
+## 🗄️ Veritabanı Modelleri
 
-### `PATCH /requests/{request_id}/status`
-Bir talebin durumunu günceller.
+### Ana Tablolar
+- `app_users` - Kullanıcılar
+- `disaster_requests` - Afet ihbarları
+- `clusters` - Kümelenmiş görev paketleri
+- `relief_vehicles` - Yardım araçları
+- `teams` - Ekipler
 
-**Body:**
-```json
-{ "status": "assigned" }
+Detaylı şema için: [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)
+
+## 🔐 Güvenlik
+
+### JWT Token
+- Geçerlilik süresi: 7 gün
+- Algorithm: HS256
+- Secret key: Ortam değişkeninden
+
+### Şifre Hashleme
+- Bcrypt algoritması
+- Salt rounds: 12
 ```
 
-Geçerli değerler: `pending`, `assigned`, `resolved`
-
----
-
-### `POST /requests/task-packages/generate`
-Kümeleme algoritmasını çalıştırır, sonuçları DB'ye yazar ve döndürür.
-
-Sadece `status=pending` olan talepler kümelenir. `assigned` veya `resolved` talepler kümelemeye dahil edilmez.
-
-**Yanıt (201):** Oluşturulan kümelerin listesi. Yanıt formatı `GET /task-packages` ile aynıdır (aşağıya bakınız).
-
----
-
-### `GET /requests/task-packages`
-Mevcut kümeleri döndürür.
-
-**Query parametreleri:**
-- `need_type` (opsiyonel): İhtiyaç tipine göre filtrele. Örn: `?need_type=su`
-- `status` (opsiyonel): Küme durumuna göre filtrele. Varsayılan: `active`
-  - `active` — sadece aktif kümeler
-  - `resolved` — sadece tamamlanmış kümeler
-  - `all` — önce aktifler, sonra tamamlanmışlar (öncelik puanına göre sıralı)
-
-**Yanıt:**
-```json
-[
-  {
-    "cluster_id": "uuid",
-    "need_type": "yangin",
-    "cluster_name": "Kadıköy Osmanağa Mahallesi - Yangın Söndürme Kümesi",
-    "center_latitude": 40.990743,
-    "center_longitude": 29.028482,
-    "location": {
-      "district": "Kadıköy",
-      "neighborhood": "Osmanağa Mahallesi",
-      "street": "Kuşdili Caddesi",
-      "full_address": "Kuşdili Caddesi, Osmanağa Mahallesi, Kadıköy"
-    },
-    "request_count": 30,
-    "total_persons_affected": 280,
-    "average_priority_score": 20.7,
-    "priority_level": "Düşük",
-    "status_summary": {
-      "pending": 28,
-      "assigned": 2,
-      "resolved": 0
-    },
-    "is_noise_cluster": false,
-    "status": "active",
-    "generated_at": "2026-03-27T11:48:27Z"
-  }
-]
-```
-
-| Alan | Açıklama |
-|------|----------|
-| `cluster_id` | Kalıcı UUID — takım ataması için kullanılır |
-| `cluster_name` | İlçe + mahalle + ihtiyaç tipinden otomatik üretilen ad |
-| `total_persons_affected` | Kümedeki tüm taleplerin `person_count` toplamı |
-| `average_priority_score` | Kümedeki taleplerin ortalama dinamik öncelik puanı (0-100) |
-| `priority_level` | `Kritik` (≥75), `Yüksek` (≥50), `Orta` (≥25), `Düşük` (<25) |
-| `status_summary` | Kümedeki taleplerin durum dağılımı |
-| `is_noise_cluster` | DBSCAN'ın kümeleyemediği dağınık noktalar için `true` |
-| `status` | `active` — yeni oluşturulmuş, `resolved` — tamamlanmış |
-
----
-
-### `GET /requests/task-packages/{cluster_id}`
-Belirli bir kümenin detayını döndürür.
-
-**Yanıt:** Yukarıdaki `TaskPackageResponse` nesnesi.
-
----
-
-## Öncelik Puanlama Sistemi
-
-### Taban Puanları ve Parametreler
-
-| need_type | Taban Puan | Ağırlık (C_i) | Maks. Tolerans |
-|-----------|-----------|---------------|----------------|
-| arama_kurtarma | 100 | 0.25 | 6 saat |
-| medikal | 95 | 0.20 | 2 saat |
-| yangin | 90 | 0.15 | 1 saat |
-| enkaz | 80 | 0.12 | 12 saat |
-| su | 60 | 0.09 | 72 saat |
-| barinma | 50 | 0.07 | 48 saat |
-| gida | 40 | 0.06 | 168 saat |
-| is_makinesi | 35 | 0.04 | 24 saat |
-| ulasim | 25 | 0.02 | 24 saat |
-
-### Zaman Sönümleme Formülü (DPS)
-
-```
-P_dynamic(t) = S_base + (S_base × λ × (t / M)) × (1 + C_i)
-```
-
-- **λ:** Zaman duyarlılık çarpanı (1.5)
-- **t:** Bekleme süresi (saat)
-- **M:** Kategorinin maksimum tolerans süresi
-
-Ham puan 1000 ile sınırlandırılır, ardından 0-100 aralığına normalize edilir. Uzun süre bekleyen düşük öncelikli talepler zamanla öne çıkar (kuyruk açlığı önleme).
-
-> Algoritmanın teorik temeli (ÇKKV/AHP + DPS) Google Gemini ile araştırılmış ve tasarlanmıştır. Detaylı dokümana [buradan](https://docs.google.com/document/d/1BdAMHpEGyv_WbslJ7ysQ6LxKDYFSQd_VBGNX3WtlsBE/edit?usp=sharing) ulaşabilirsiniz.
-
----
-
-## Mekansal Kümeleme (DBSCAN)
-
-`clustering_engine.py` içindeki motor şu adımları izler:
-
-1. Sadece `status=pending` olan talepler alınır
-2. Talepler `need_type`'a göre gruplandırılır
-3. Her grup için koordinatlar radyana çevrilir
-4. DBSCAN `haversine` metriği ile çalışır; `eps = 500m / 6_371_000m ≈ 7.85e-5 radyan`
-5. Minimum 2 talep bir küme oluşturur
-6. Her küme için merkez koordinat ortalaması alınır, Nominatim ile ters geocoding yapılır
-7. `person_count` toplamı ve `status` dağılımı hesaplanır
-8. Sonuçlar DB'ye yazılır, her kümeye kalıcı UUID atanır
-9. Paketler `average_priority_score`'a göre azalan sırada döndürülür
-
-DBSCAN'ın herhangi bir kümeye atayamadığı noktalar `is_noise_cluster: true` olarak işaretlenir.
-
----
-
-## Mock Veri Üretici
+## 📊 Mock Veri Oluşturma
 
 ```bash
-# Rastgele 500 kayıt
+# Rastgele 500 ihbar
 python mock_data_generator.py
 
-# Kümeleme testi için 10 küme × 30 talep (İstanbul ilçe merkezleri etrafında)
+# Kümelenmiş test verisi
 python mock_data_generator.py --clustered
+
+# Belirli sayıda ihbar
+python mock_data_generator.py --count 100
 ```
 
----
+## 🚀 Production Deployment
 
-## Küme Yaşam Döngüsü
+### Docker
 
-1. **Oluşturma:** `POST /task-packages/generate` çağrılır, `pending` talepler kümelenir, DB'ye yazılır
-2. **Görüntüleme:** `GET /task-packages` ile aktif kümeler listelenir
-3. **Atama:** (Gelecekte) Takım bir kümeye atanır, kümedeki talepler `assigned` olur
-4. **Tamamlama:** (Gelecekte) Küme `resolved` olarak işaretlenir
-5. **Arşiv:** `GET /task-packages?status=all` ile tamamlanmış kümeler de görüntülenebilir
+```bash
+# Build
+docker build -t afet-backend .
+
+# Run
+docker run -d -p 8000:8000 \
+  -e DATABASE_URL=postgresql://user:pass@host:5432/db \
+  -e SECRET_KEY=your-secret-key \
+  afet-backend
+```
+
+### Gunicorn ile Çalıştırma
+```bash
+gunicorn main:app \
+  -w 4 \
+  -k uvicorn.workers.UvicornWorker \
+  --bind 0.0.0.0:8000 \
+  --access-logfile - \
+  --error-logfile -
+```
+
+### Docker
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### Ortam Değişkenleri (Production)
+```env
+DATABASE_URL=postgresql://user:pass@host:5432/db
+SECRET_KEY=strong-random-key-here
+ALLOWED_ORIGINS=https://yourdomain.com
+LOG_LEVEL=INFO
+```
+
+## 📖 Dokümantasyon
+
+- [API Dokümantasyonu](docs/API.md) - Tüm endpoint'ler ve örnekler
+- [Veritabanı Şeması](docs/DATABASE_SCHEMA.md) - ER diagram ve ilişkiler
+
+## 📂 Modül Açıklamaları
+
+### core/
+Merkezi bağımlılıklar ve yapılandırma dosyaları.
+- `dependencies.py`: Database session yönetimi (`get_db()`)
+
+### utils/
+Yardımcı fonksiyonlar ve araçlar.
+- `geo.py`: Coğrafi hesaplamalar (Haversine formülü, deprem yakınlık kontrolü)
+- `websocket.py`: WebSocket bağlantı yönetimi (`ConnectionManager`)
+
+### routers/
+API endpoint'lerini içeren router modülleri.
+- `auth.py`: Kimlik doğrulama (register, login, profile)
+- `clusters.py`: Kümeleme ve araç önerisi
+- `requests.py`: İhbar yönetimi
+- `vehicles.py`: Araç CRUD işlemleri
+
+### services/
+İş mantığı katmanı (gelecek genişlemeler için hazır).
+
+### tests/
+Otomatik test dosyaları.
+- `test_auth.py`: Kimlik doğrulama testleri
+- `test_vehicle_recommendation.py`: Araç önerisi ve ETA testleri
+- `test_integration.py`: Entegrasyon testleri
+
+## 🤝 Katkıda Bulunma
+
+1. Issue açın veya mevcut bir issue'yu seçin
+2. Feature branch oluşturun
+3. Testlerinizi yazın
+4. Pull request açın
+
+## 📝 Notlar
+
+- Test verileri için `mock_data_generator.py` kullanın
+- Migration'ları sırayla çalıştırın
+- Production'da `SECRET_KEY` mutlaka değiştirin
+- CORS ayarlarını production için güncelleyin

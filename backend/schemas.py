@@ -70,11 +70,115 @@ class VehicleCreate(BaseModel):
     longitude: float
     vehicle_type: str
     capacity: str
+    base_speed_kmh: int = 60
 
 
 class VehicleUpdate(BaseModel):
+    tent_count: int | None = None
+    food_count: int | None = None
+    water_count: int | None = None
+    medical_count: int | None = None
+    blanket_count: int | None = None
+    base_speed_kmh: int | None = None
+
+
+class VehicleResponse(BaseModel):
+    id: UUID
+    latitude: float
+    longitude: float
+    vehicle_type: str
+    capacity: str
+    base_speed_kmh: int
     tent_count: int
     food_count: int
     water_count: int
     medical_count: int
     blanket_count: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# Vehicle Recommendation Schemas
+
+class VehicleRecommendationDetails(BaseModel):
+    distance_km: float
+    eta_minutes: int
+    available_stock: int
+    required_quantity: int
+    stock_score: float
+    distance_score: float
+    speed_score: float
+    urgency_score: float
+    total_score: float
+
+
+class VehicleRecommendationResponse(BaseModel):
+    vehicle_id: UUID
+    vehicle_type: str
+    capacity: str
+    latitude: float
+    longitude: float
+    base_speed_kmh: int
+    score: float
+    details: VehicleRecommendationDetails
+    recommendation_text: str  # AI tarafından oluşturulan açıklama
+
+
+
+# Authentication Schemas
+
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    first_name: str
+    last_name: str
+    tc_identity_no: str
+    phone: str
+    role: str
+    expertise_area: str | None = None
+    organization: str | None = None
+    city: str
+    district: str
+    profile_photo_url: str | None = None
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
+class UserUpdate(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+    expertise_area: str | None = None
+    organization: str | None = None
+    city: str | None = None
+    district: str | None = None
+    profile_photo_url: str | None = None
+
+
+class UserResponse(BaseModel):
+    id: UUID
+    email: str
+    first_name: str
+    last_name: str
+    tc_identity_no: str
+    phone: str
+    role: str
+    expertise_area: str | None
+    organization: str | None
+    city: str
+    district: str
+    profile_photo_url: str | None
+    is_active: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse
