@@ -1,6 +1,8 @@
 from live_earthquake_data import get_last_24h_earthquakes, get_major_earthquakes_last_3_months
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from rate_limiter import check_rate_limit
+from notification_service import send_assignment_notification
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import engine, SessionLocal
@@ -78,12 +80,12 @@ def health_check():
 
 # Eski endpoint (geriye dönük uyumluluk)
 @app.post("/talep-gonder", response_model=schemas.RequestResponse)
-def create_request_legacy(request_data: schemas.RequestCreate, db: Session = Depends(get_db)):
+def create_request_legacy(request_data: schemas.RequestCreate, request: Request, db: Session = Depends(get_db), _: None = Depends(check_rate_limit)):
     return _create_request(request_data, db)
 
 # Yeni endpoint
 @app.post("/requests", response_model=schemas.RequestResponse)
-def create_request(request_data: schemas.RequestCreate, db: Session = Depends(get_db)):
+def create_request(request_data: schemas.RequestCreate, request: Request, db: Session = Depends(get_db), _: None = Depends(check_rate_limit)):
     return _create_request(request_data, db)
 
 def _create_request(request_data: schemas.RequestCreate, db: Session):
@@ -196,4 +198,14 @@ def assign_vehicle(data: schemas.AssignVehicleRequest, db: Session = Depends(get
     vehicle.tent_count -= needed
     db.commit()
     db.refresh(vehicle)
+
+    # Görev 4.2 — Bildirim simülasyonu
+    send_assignment_notification(
+        cluster_name=cluster.cluster_name,
+        center_lat=cluster.center_latitude,
+        center_lon=cluster.center_longitude,
+        total_persons=needed,
+        need_type=cluster.need_type,
+    )
+
     return {"message": "Vehicle assigned and stock updated", "remaining_tents": vehicle.tent_count}
