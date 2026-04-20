@@ -6,7 +6,6 @@ const PRIORITY_COLORS = {
   'Orta':   { border: 'border-amber-500/30',  bg: 'bg-amber-500/10',  badge: 'bg-amber-500 text-slate-900', text: 'text-amber-400', btn: 'bg-slate-700 hover:bg-slate-600' },
   'Düşük':  { border: 'border-slate-600/30',  bg: 'bg-slate-700/10',  badge: 'bg-slate-600 text-white', text: 'text-slate-400', btn: 'bg-slate-700 hover:bg-slate-600' },
 };
-
 const NEED_LABELS = {
   arama_kurtarma: 'Arama Kurtarma', medikal: 'Medikal', yangin: 'Yangın',
   enkaz: 'Enkaz', su: 'Su', barinma: 'Barınma', gida: 'Gıda',
@@ -20,6 +19,10 @@ export default function Kumeler() {
   const [error, setError] = useState(null);
   const [yonlendirilenId, setYonlendirilenId] = useState(null);
   const [bildirim, setBildirim] = useState(null);
+  const [modal, setModal] = useState(null); // { kume } — araç seçim modalı
+  const [araclar, setAraclar] = useState([]);
+  const [seciliAracId, setSeciliAracId] = useState('');
+  const [ataniyor, setAtaniyor] = useState(false);
 
   const fetchKumeler = useCallback(async () => {
     try {
@@ -57,11 +60,38 @@ export default function Kumeler() {
   };
 
   const handleYonlendir = async (kume) => {
-    setYonlendirilenId(kume.cluster_id);
-    // Bildirim simülasyonu — assign-vehicle DB gerektiriyor, şimdilik konsol
-    console.log(`EKİP YÖNLENDİR: ${kume.cluster_name} | ${kume.center_latitude}, ${kume.center_longitude}`);
-    setBildirim({ type: 'info', msg: `"${kume.cluster_name}" için ekip yönlendirme talebi gönderildi.` });
-    setTimeout(() => { setYonlendirilenId(null); setBildirim(null); }, 3000);
+    // Araç listesini çek, modal aç
+    try {
+      const r = await fetch('/araclar');
+      const data = await r.json();
+      setAraclar(data);
+    } catch {
+      setAraclar([]);
+    }
+    setSeciliAracId('');
+    setModal({ kume });
+  };
+
+  const handleAracAta = async () => {
+    if (!seciliAracId || !modal) return;
+    setAtaniyor(true);
+    try {
+      const r = await fetch(`/requests/task-packages/${modal.kume.cluster_id}/assign-vehicle?vehicle_id=${seciliAracId}`, {
+        method: 'POST',
+      });
+      if (!r.ok) {
+        const err = await r.json();
+        throw new Error(err.detail || `HTTP ${r.status}`);
+      }
+      setBildirim({ type: 'success', msg: `"${modal.kume.cluster_name}" için araç atandı. Bildirim gönderildi.` });
+      setModal(null);
+      setTimeout(() => setBildirim(null), 4000);
+    } catch (e) {
+      setBildirim({ type: 'error', msg: `Atama başarısız: ${e.message}` });
+      setTimeout(() => setBildirim(null), 4000);
+    } finally {
+      setAtaniyor(false);
+    }
   };
 
   const toplam = kumeler.length;
@@ -71,6 +101,46 @@ export default function Kumeler() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-900 text-white relative p-6">
+
+      {/* ARAÇ ATAMA MODALI */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-lg font-bold mb-1">Araç Ata</h3>
+            <p className="text-slate-400 text-sm mb-4">{modal.kume.cluster_name}</p>
+            <div className="mb-4">
+              <label className="text-[10px] text-slate-400 uppercase font-bold block mb-2">Araç Seç</label>
+              {araclar.length === 0 ? (
+                <p className="text-slate-500 text-sm">Kayıtlı araç bulunamadı.</p>
+              ) : (
+                <select
+                  value={seciliAracId}
+                  onChange={e => setSeciliAracId(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+                >
+                  <option value="">-- Araç seçin --</option>
+                  {araclar.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.vehicle_type} — Çadır: {a.tent_count ?? 0} | Kapasite: {a.capacity}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setModal(null)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm font-bold">İptal</button>
+              <button
+                onClick={handleAracAta}
+                disabled={!seciliAracId || ataniyor}
+                className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl text-sm font-bold"
+              >
+                {ataniyor ? 'Atanıyor...' : 'Onayla & Gönder'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-[1600px] mx-auto grid grid-cols-12 gap-6">
 
         {/* BAŞLIK */}
@@ -180,11 +250,10 @@ export default function Kumeler() {
                     </div>
                     <button
                       onClick={() => handleYonlendir(kume)}
-                      disabled={yonlendirilenId === kume.cluster_id}
-                      className={`w-full ${c.btn} text-white py-3 rounded-xl font-bold mt-4 transition-colors active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60`}
+                      className={`w-full ${c.btn} text-white py-3 rounded-xl font-bold mt-4 transition-colors active:scale-95 flex items-center justify-center gap-2`}
                     >
                       <span className="material-symbols-outlined">send</span>
-                      {yonlendirilenId === kume.cluster_id ? 'GÖNDERİLDİ' : 'EKİP YÖNLENDİR'}
+                      EKİP YÖNLENDİR
                     </button>
                   </div>
                 </div>
