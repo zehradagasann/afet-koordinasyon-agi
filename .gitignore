@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Locust yük testi çıktıları (geçici, repoda tutulmaz)
+backend/load_test_results_*.csv
+
 # Distribution / packaging
 .Python
 build/
