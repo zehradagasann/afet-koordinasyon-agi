@@ -8,6 +8,8 @@ __pycache__/
 
 # Locust yük testi çıktıları (geçici, repoda tutulmaz)
 backend/load_test_results_*.csv
+backend/load_test_500*.csv
+backend/load_test_500_v2*.csv
 
 # Distribution / packaging
 .Python
