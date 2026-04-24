@@ -6,6 +6,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from math import sqrt
 import asyncio
+from time import time
 
 from database import engine
 from rate_limiter import check_rate_limit
@@ -13,6 +14,13 @@ from notification_service import send_assignment_notification
 from live_earthquake_data import get_last_24h_earthquakes, get_major_earthquakes_last_3_months
 import models
 import schemas
+
+# cache süresi
+cache = {
+    "data": None,
+    "timestamp": 0
+}
+CACHE_DURATION = 60  # 60 saniye (1 dakika)
 
 # Geo yardımcıları — utils varsa oradan, yoksa local tanımla
 try:
@@ -251,7 +259,7 @@ def get_prioritized_requests_legacy(db: Session = Depends(get_db)):
 
 @app.get(
     "/requests/prioritized",
-    response_model=List[schemas.PrioritizedRequestResponse],
+  #bunu sonra   response_model=List[schemas.PrioritizedRequestResponse],
     tags=["İhbar Yönetimi"],
     summary="Öncelikli İhbarları Listele",
     description="""
@@ -269,8 +277,27 @@ Tüm afet ihbarlarını **dinamik öncelik puanına** göre azalan sırada döne
 Bekleyen ihbarların puanı zamanla artar — hiçbir ihbar sonsuza kadar beklemez.
 """,
 )
+# def get_prioritized_requests(db: Session = Depends(get_db)):
+#    return _get_prioritized(db)
+
 def get_prioritized_requests(db: Session = Depends(get_db)):
-    return _get_prioritized(db)
+
+    current_time = time()
+
+    # cache kontrolü (süre dolmadıysa cache'ten dön)
+    if cache["data"] is not None and (current_time - cache["timestamp"] < CACHE_DURATION):
+        print("CACHE'DEN GELDİ") # test için 
+        return cache["data"]
+    
+    print("DATABASE'DEN GELDİ") #test için
+
+    data = _get_prioritized(db)
+
+    cache["data"] = data
+    cache["timestamp"] = current_time
+
+    return data
+    
 
 
 def _get_prioritized(db: Session):
@@ -510,3 +537,26 @@ async def start_swarm_operation(data: SuruBaslatSchema):
     print(f"OPERASYON: {data.sektor_id} bölgesinde {data.aksiyon} tetiklendi!")
     await manager.broadcast({"event": "SWARM_STARTED", "sector": data.sektor_id, "action": data.aksiyon})
     return {"status": "started", "detail": f"{data.sektor_id} için operasyon başladı."}
+
+    #ARŞİVLEME 
+@app.post("/archive-resolved-requests")
+def archive_requests(db: Session = Depends(get_db)):
+
+    #archive tablosuna taşı
+    db.execute(text("""
+        INSERT INTO archived_disaster_requests
+        SELECT *, NOW() as archived_at
+        FROM disaster_requests
+        WHERE status = 'resolved'
+    """))
+
+    #ana tablodan sil
+    db.execute(text("""
+        DELETE FROM disaster_requests
+        WHERE status = 'resolved'
+    """))
+
+    db.commit()
+
+    return {"message": "Archived successfully"}
+
