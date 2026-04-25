@@ -14,7 +14,11 @@ class RequestStatus(str, enum.Enum):
 
 
 class ClusterStatus(str, enum.Enum):
+    # active: küme oluştu, henüz araç atanmadı
+    # en_route: araç görevlendirildi, varış noktasına gidiyor (UI: "YOLDA")
+    # resolved: görev tamamlandı
     active = "active"
+    en_route = "en_route"
     resolved = "resolved"
 
 
@@ -53,6 +57,10 @@ class ReliefVehicle(Base):
     water_count = Column(Integer, default=0)
     medical_count = Column(Integer, default=0)
     blanket_count = Column(Integer, default=0)
+
+    # vehicle_status: "available" (müsait) | "en_route" (yolda) | "on_site" (sahada)
+    vehicle_status = Column(String, default="available", nullable=False)
+    assigned_cluster_id = Column(UUID(as_uuid=True), ForeignKey('clusters.id'), nullable=True)
 
 
 class Cluster(Base):

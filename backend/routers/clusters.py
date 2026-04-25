@@ -2,13 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
+from datetime import datetime, timezone, timedelta
 
 import schemas
-import models
 from models import Cluster, ClusterStatus, ReliefVehicle
+from constants import VehicleStatus
 from core.dependencies import get_db
 from services.clustering import run_clustering
 from services.vehicle_recommendation import recommend_vehicles, NEED_TO_STOCK_FIELD
+from services.override_detector import detect_override_opportunities
+from services.priority import calculate_priority_with_context
 
 router = APIRouter(prefix="/requests/task-packages", tags=["clusters"])
 
@@ -59,24 +62,173 @@ def get_task_packages(
 
     if status == "all":
         clusters = query.order_by(
-            Cluster.status.desc(),  # active > resolved alfabetik
+            Cluster.status.desc(),
             Cluster.average_priority_score.desc(),
         ).all()
-        # active önce, resolved sonra — explicit sıralama
         active = [c for c in clusters if c.status == ClusterStatus.active]
+        en_route = [c for c in clusters if c.status == ClusterStatus.en_route]
         resolved = [c for c in clusters if c.status == ClusterStatus.resolved]
-        clusters = active + resolved
+        clusters = active + en_route + resolved
     elif status == "resolved":
         query = query.filter(Cluster.status == ClusterStatus.resolved)
         clusters = query.order_by(Cluster.average_priority_score.desc()).all()
-    else:
-        query = query.filter(Cluster.status == ClusterStatus.active)
+    elif status == "en_route":
+        query = query.filter(Cluster.status == ClusterStatus.en_route)
         clusters = query.order_by(Cluster.average_priority_score.desc()).all()
+    else:
+        # "active" varsayılanı: hem aktif hem de en_route kümeler döner
+        # (Dashboard yolda kümeleri sarı kart olarak göstersin diye)
+        query = query.filter(
+            Cluster.status.in_([ClusterStatus.active, ClusterStatus.en_route])
+        )
+        clusters = query.order_by(
+            Cluster.status.asc(),
+            Cluster.average_priority_score.desc(),
+        ).all()
 
     if need_type:
         clusters = [c for c in clusters if c.need_type == need_type.lower()]
 
     return [_cluster_to_response(c) for c in clusters]
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Statik-path endpoint'ler — /{cluster_id} dinamik route'undan ÖNCE tanımlanmalı
+# (Aksi halde FastAPI 'override-alerts' string'ini UUID parse etmeye çalışır)
+# ──────────────────────────────────────────────────────────────────────────
+
+@router.get("/override-alerts", response_model=List[schemas.OverrideAlertResponse])
+def get_override_alerts(db: Session = Depends(get_db)):
+    """
+    Yolda olan araçlar için 'Aracı Kaydır' önerilerini döndürür.
+
+    AI Politikası:
+    - Yeni küme tipi medikal/arama_kurtarma ise daima öneri üretir
+    - Yeni kümenin puanı, mevcut hedeften +20 puan üstündeyse öneri üretir
+    - Aracın 50 km'den uzakta olduğu kümeler eler
+    """
+    return detect_override_opportunities(db)
+
+
+@router.post("/execute-override")
+def execute_override(
+    payload: schemas.ExecuteOverrideRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Yetkilinin onayı ile bir aracı yeni kümeye yönlendirir.
+    Eski küme tekrar 'active' statüsüne döner, yeni küme 'yolda' olur.
+    Stok hareketi otomatik yeniden hesaplanır.
+    """
+    vehicle = (
+        db.query(ReliefVehicle)
+        .filter(ReliefVehicle.id == payload.vehicle_id)
+        .first()
+    )
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Araç bulunamadı")
+
+    if vehicle.vehicle_status != VehicleStatus.EN_ROUTE or not vehicle.assigned_cluster_id:
+        raise HTTPException(status_code=400, detail="Araç şu an yolda değil")
+
+    new_cluster = (
+        db.query(Cluster).filter(Cluster.id == payload.new_cluster_id).first()
+    )
+    if not new_cluster:
+        raise HTTPException(status_code=404, detail="Hedef küme bulunamadı")
+
+    if new_cluster.status != ClusterStatus.active:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Hedef küme aktif değil (mevcut: {new_cluster.status})"
+        )
+
+    old_cluster = (
+        db.query(Cluster)
+        .filter(Cluster.id == vehicle.assigned_cluster_id)
+        .first()
+    )
+
+    from services.vehicle_recommendation import calculate_required_quantity
+
+    if old_cluster:
+        old_stock_field = NEED_TO_STOCK_FIELD.get(
+            old_cluster.need_type.lower(), "tent_count"
+        )
+        old_required = calculate_required_quantity(
+            old_cluster.need_type, old_cluster.total_persons_affected
+        )
+        current_old_stock = getattr(vehicle, old_stock_field, 0)
+        setattr(vehicle, old_stock_field, current_old_stock + old_required)
+
+        old_cluster.status = ClusterStatus.active
+        old_cluster.pending_count = old_cluster.request_count
+        old_cluster.assigned_count = 0
+
+    new_stock_field = NEED_TO_STOCK_FIELD.get(
+        new_cluster.need_type.lower(), "tent_count"
+    )
+    new_required = calculate_required_quantity(
+        new_cluster.need_type, new_cluster.total_persons_affected
+    )
+    available_new_stock = getattr(vehicle, new_stock_field, 0)
+
+    if available_new_stock < new_required:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Aracın yeni küme için yeterli stoku yok. "
+                f"Gerekli: {new_required} {new_stock_field}, "
+                f"Mevcut: {available_new_stock}"
+            ),
+        )
+
+    setattr(vehicle, new_stock_field, available_new_stock - new_required)
+
+    vehicle.assigned_cluster_id = new_cluster.id
+    new_cluster.status = ClusterStatus.en_route
+    new_cluster.assigned_count = new_cluster.request_count
+    new_cluster.pending_count = 0
+
+    db.commit()
+    db.refresh(vehicle)
+    db.refresh(new_cluster)
+
+    return {
+        "message": "Araç başarıyla yeni göreve yönlendirildi",
+        "vehicle_id": str(vehicle.id),
+        "new_cluster_id": str(new_cluster.id),
+        "new_cluster_name": new_cluster.cluster_name,
+        "old_cluster_id": str(old_cluster.id) if old_cluster else None,
+        "old_cluster_status": old_cluster.status if old_cluster else None,
+    }
+
+
+@router.post("/priority-simulate", response_model=schemas.PriorityScenarioResponse)
+def simulate_priority_scenario(scenario: schemas.PriorityScenarioRequest):
+    """
+    Puanlama algoritmasını farklı senaryolarda test eder.
+
+    Örnek senaryo (çadır + soğuk hava + araç yok):
+        need_type: "barinma"
+        wait_hours: 2
+        temperature_celsius: -5
+        vehicles_within_radius: 0
+
+    → Beklenen sonuç: temel barınma puanı + 30 (soğuk) + 20 (araç yok) ≈ 100
+    """
+    pseudo_created_at = datetime.now(timezone.utc) - timedelta(
+        hours=max(scenario.wait_hours, 0)
+    )
+    return calculate_priority_with_context(
+        need_type=scenario.need_type,
+        created_at=pseudo_created_at,
+        temperature_celsius=scenario.temperature_celsius,
+        vehicles_within_radius=scenario.vehicles_within_radius,
+        is_raining=scenario.is_raining,
+        is_night=scenario.is_night,
+    )
 
 
 @router.get("/{cluster_id}", response_model=schemas.TaskPackageResponse)
@@ -177,49 +329,58 @@ def assign_vehicle_to_cluster(
     db: Session = Depends(get_db)
 ):
     """
-    Bir aracı kümeye atar ve stok günceller
+    Bir aracı kümeye atar ve aracı 'yolda' durumuna geçirir.
+    Stok burada rezerve edilir (azaltılır), küme 'yolda' statüsüne geçer.
+    Görev tamamlandığında /complete endpoint'i çağrılmalıdır.
     """
-    # Cluster'ı kontrol et
     cluster = db.query(Cluster).filter(Cluster.id == cluster_id).first()
     if not cluster:
         raise HTTPException(status_code=404, detail="Cluster bulunamadı")
-    
-    # Aracı kontrol et
+
+    if cluster.status == ClusterStatus.resolved:
+        raise HTTPException(status_code=400, detail="Küme zaten çözümlenmiş")
+
     vehicle = db.query(ReliefVehicle).filter(ReliefVehicle.id == vehicle_id).first()
     if not vehicle:
         raise HTTPException(status_code=404, detail="Araç bulunamadı")
-    
-    # Gerekli miktarı hesapla
-    from services.vehicle_recommendation import calculate_required_quantity, NEED_TO_STOCK_FIELD
+
+    if vehicle.vehicle_status == VehicleStatus.EN_ROUTE and vehicle.assigned_cluster_id != cluster_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Araç zaten başka bir göreve yolda. Önce override ile yönlendirin."
+        )
+
+    from services.vehicle_recommendation import calculate_required_quantity
     required_quantity = calculate_required_quantity(
         cluster.need_type,
         cluster.total_persons_affected
     )
-    
-    # Stok kontrolü
+
     stock_field = NEED_TO_STOCK_FIELD.get(cluster.need_type.lower(), "tent_count")
     available_stock = getattr(vehicle, stock_field, 0)
-    
+
     if available_stock < required_quantity:
         raise HTTPException(
             status_code=400,
             detail=f"Yetersiz stok. Gerekli: {required_quantity}, Mevcut: {available_stock}"
         )
-    
-    # Stoğu güncelle
+
     new_stock = available_stock - required_quantity
     setattr(vehicle, stock_field, new_stock)
-    
-    # Cluster durumunu güncelle
-    cluster.status = ClusterStatus.resolved
-    cluster.resolved_count = cluster.request_count
+
+    # Yeni akış: küme 'yolda' statüsüne geçer (resolved değil)
+    cluster.status = ClusterStatus.en_route
+    cluster.assigned_count = cluster.request_count
     cluster.pending_count = 0
-    
+
+    # Araç en_route durumuna geçer ve hangi kümeye gittiği kaydedilir
+    vehicle.vehicle_status = VehicleStatus.EN_ROUTE
+    vehicle.assigned_cluster_id = cluster.id
+
     db.commit()
     db.refresh(vehicle)
     db.refresh(cluster)
-    
-    # ETA hesapla
+
     from services.vehicle_recommendation import calculate_haversine_distance, calculate_eta
     distance_km = calculate_haversine_distance(
         vehicle.latitude, vehicle.longitude,
@@ -230,13 +391,54 @@ def assign_vehicle_to_cluster(
         vehicle.base_speed_kmh or 60,
         cluster.average_priority_score
     )
-    
+
     return {
-        "message": "Araç başarıyla atandı",
+        "message": "Araç görevlendirildi ve yola çıktı",
         "cluster_id": cluster_id,
         "vehicle_id": vehicle_id,
         "remaining_stock": new_stock,
         "distance_km": round(distance_km, 2),
         "eta_minutes": eta_minutes,
-        "cluster_status": cluster.status
+        "cluster_status": cluster.status,
+        "vehicle_status": vehicle.vehicle_status,
     }
+
+
+@router.post("/{cluster_id}/complete")
+def complete_cluster_mission(cluster_id: UUID, db: Session = Depends(get_db)):
+    """Aracın bölgeye ulaştığını ve görevin tamamlandığını işaretler."""
+    cluster = db.query(Cluster).filter(Cluster.id == cluster_id).first()
+    if not cluster:
+        raise HTTPException(status_code=404, detail="Cluster bulunamadı")
+
+    if cluster.status != ClusterStatus.en_route:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Küme 'yolda' statüsünde değil (mevcut: {cluster.status})"
+        )
+
+    # Bu kümeye giden tüm araçları serbest bırak
+    en_route_vehicles = (
+        db.query(ReliefVehicle)
+        .filter(ReliefVehicle.assigned_cluster_id == cluster_id)
+        .all()
+    )
+    for v in en_route_vehicles:
+        v.vehicle_status = VehicleStatus.AVAILABLE
+        v.assigned_cluster_id = None
+
+    cluster.status = ClusterStatus.resolved
+    cluster.resolved_count = cluster.request_count
+    cluster.assigned_count = 0
+
+    db.commit()
+    db.refresh(cluster)
+
+    return {
+        "message": "Görev tamamlandı",
+        "cluster_id": cluster_id,
+        "released_vehicle_count": len(en_route_vehicles),
+        "cluster_status": cluster.status,
+    }
+
+
