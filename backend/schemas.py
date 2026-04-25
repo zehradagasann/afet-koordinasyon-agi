@@ -69,17 +69,24 @@ class VehicleCreate(BaseModel):
     latitude: float
     longitude: float
     vehicle_type: str
+    plate_number: str | None = None
     capacity: str
-    base_speed_kmh: int = 60
+    base_speed_kmh: int = Field(default=60, ge=1)
+    tent_count: int = Field(default=0, ge=0)
+    food_count: int = Field(default=0, ge=0)
+    water_count: int = Field(default=0, ge=0)
+    medical_count: int = Field(default=0, ge=0)
+    blanket_count: int = Field(default=0, ge=0)
 
 
 class VehicleUpdate(BaseModel):
-    tent_count: int | None = None
-    food_count: int | None = None
-    water_count: int | None = None
-    medical_count: int | None = None
-    blanket_count: int | None = None
-    base_speed_kmh: int | None = None
+    plate_number: str | None = None
+    tent_count: int | None = Field(default=None, ge=0)
+    food_count: int | None = Field(default=None, ge=0)
+    water_count: int | None = Field(default=None, ge=0)
+    medical_count: int | None = Field(default=None, ge=0)
+    blanket_count: int | None = Field(default=None, ge=0)
+    base_speed_kmh: int | None = Field(default=None, ge=1)
 
 
 class VehicleResponse(BaseModel):
@@ -87,6 +94,7 @@ class VehicleResponse(BaseModel):
     latitude: float
     longitude: float
     vehicle_type: str
+    plate_number: str | None = None
     capacity: str
     base_speed_kmh: int
     tent_count: int

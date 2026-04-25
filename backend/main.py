@@ -342,8 +342,9 @@ def update_request_status(request_id: str, data: schemas.StatusUpdate, db: Sessi
 @app.post(
     "/arac-ekle",
     tags=["Araç Yönetimi"],
+    response_model=schemas.VehicleResponse,
     summary="Yeni Yardım Aracı Ekle",
-    description="Sisteme yeni bir yardım aracı kaydeder. Araç tipi, konum ve kapasite bilgileri alınır.",
+    description="Sisteme yeni bir yardım aracı kaydeder. Araç tipi, plaka/kod, konum, kapasite, hız ve başlangıç stok bilgileri alınır.",
 )
 def create_vehicle(vehicle: schemas.VehicleCreate, db: Session = Depends(get_db)):
     new_vehicle = models.ReliefVehicle(**vehicle.model_dump())
@@ -356,6 +357,7 @@ def create_vehicle(vehicle: schemas.VehicleCreate, db: Session = Depends(get_db)
 @app.get(
     "/araclar",
     tags=["Araç Yönetimi"],
+    response_model=List[schemas.VehicleResponse],
     summary="Tüm Araçları Listele",
     description="Sistemdeki tüm yardım araçlarını ve stok bilgilerini (çadır, gıda, su, tıbbi malzeme, battaniye) döner.",
 )
@@ -413,14 +415,15 @@ def get_nearby_postgis(lat: float, lon: float, db: Session = Depends(get_db)):
 @app.put(
     "/arac-guncelle/{vehicle_id}",
     tags=["Araç Yönetimi"],
+    response_model=schemas.VehicleResponse,
     summary="Araç Stok Bilgilerini Güncelle",
-    description="Belirtilen aracın stok bilgilerini (çadır, gıda, su, tıbbi malzeme, battaniye sayıları) günceller.",
+    description="Belirtilen aracın tanım, hız ve stok bilgilerini günceller.",
 )
 def update_vehicle(vehicle_id: str, data: schemas.VehicleUpdate, db: Session = Depends(get_db)):
     vehicle = db.query(models.ReliefVehicle).filter(models.ReliefVehicle.id == vehicle_id).first()
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
-    for field, value in data.model_dump().items():
+    for field, value in data.model_dump(exclude_unset=True).items():
         setattr(vehicle, field, value)
     db.commit()
     db.refresh(vehicle)

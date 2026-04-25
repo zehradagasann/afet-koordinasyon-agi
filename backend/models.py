@@ -49,6 +49,7 @@ class ReliefVehicle(Base):
     latitude = Column(Float)
     longitude = Column(Float)
     vehicle_type = Column(String)
+    plate_number = Column(String, nullable=True)
     capacity = Column(String)
     base_speed_kmh = Column(Integer, default=60)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
