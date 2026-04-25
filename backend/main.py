@@ -11,7 +11,8 @@ from time import time
 from database import engine
 from rate_limiter import check_rate_limit
 from notification_service import send_assignment_notification
-from live_earthquake_data import get_last_24h_earthquakes, get_major_earthquakes_last_3_months
+from live_earthquake_data import get_last_24h_earthquakes, get_major_earthquakes_last_3_months, get_circuit_breaker_status
+from trust_scorer import calculate_trust_score
 import models
 import schemas
 from services.request_intake import create_disaster_request
@@ -156,6 +157,23 @@ def health_check():
     return {"status": "ok", "message": "Afet Koordinasyon API çalışıyor"}
 
 
+@app.get(
+    "/circuit-breaker/status",
+    tags=["Sistem"],
+    summary="Circuit Breaker Durumu",
+    description="""
+Kandilli API için Circuit Breaker'ın mevcut durumunu döner.
+
+**Durumlar:**
+- `CLOSED` — Normal çalışma, API istekleri geçiyor
+- `OPEN` — Hata eşiği aşıldı, istekler engellendi, cache kullanılıyor
+- `HALF_OPEN` — Bekleme süresi doldu, test isteği atılacak
+""",
+)
+def circuit_breaker_status():
+    return get_circuit_breaker_status()
+
+
 # ── İHBAR YÖNETİMİ ────────────────────────────────────────────────────────
 
 @app.post(
@@ -184,7 +202,7 @@ def create_request_legacy(
     db: Session = Depends(get_db),
     _: None = Depends(check_rate_limit),
 ):
-    return _create_request_sync(request_data, db)
+    return _create_request_sync(request_data, db, client_ip=request.client.host)
 
 
 @app.post(
@@ -214,7 +232,7 @@ async def create_request(
     db: Session = Depends(get_db),
     _: None = Depends(check_rate_limit),
 ):
-    intake_result = create_disaster_request(db, request_data)
+    intake_result = create_disaster_request(db, request_data, client_ip=request.client.host)
     db_request = intake_result.disaster_request
     await manager.broadcast({
         "event": "NEW_REQUEST",
@@ -224,13 +242,14 @@ async def create_request(
             "latitude": db_request.latitude,
             "longitude": db_request.longitude,
             "is_verified": intake_result.is_verified,
+            "trust_score": intake_result.trust_score,
         }
     })
     return db_request
 
 
-def _create_request_sync(request_data: schemas.RequestCreate, db: Session):
-    return create_disaster_request(db, request_data).disaster_request
+def _create_request_sync(request_data: schemas.RequestCreate, db: Session, client_ip: str = "unknown"):
+    return create_disaster_request(db, request_data, client_ip=client_ip).disaster_request
 
 
 @app.get(
