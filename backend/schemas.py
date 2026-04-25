@@ -95,6 +95,8 @@ class VehicleResponse(BaseModel):
     medical_count: int
     blanket_count: int
     created_at: datetime
+    vehicle_status: str = "available"  # available | en_route | on_site
+    assigned_cluster_id: UUID | None = None
 
     model_config = {"from_attributes": True}
 
@@ -123,6 +125,59 @@ class VehicleRecommendationResponse(BaseModel):
     score: float
     details: VehicleRecommendationDetails
     recommendation_text: str  # AI tarafından oluşturulan açıklama
+
+
+# Sprint 5.5 — Override (Dinamik Rota Kaydırma) Şemaları
+
+class OverrideAlertResponse(BaseModel):
+    vehicle_id: UUID
+    vehicle_type: str
+    vehicle_lat: float
+    vehicle_lon: float
+    current_cluster_id: UUID
+    current_cluster_name: str
+    current_cluster_score: float
+    current_need_type: str
+    new_cluster_id: UUID
+    new_cluster_name: str
+    new_cluster_score: float
+    new_need_type: str
+    new_cluster_lat: float
+    new_cluster_lon: float
+    score_difference: float
+    distance_to_new_km: float
+    distance_to_current_km: float
+    reason: str
+
+
+class ExecuteOverrideRequest(BaseModel):
+    vehicle_id: UUID
+    new_cluster_id: UUID
+
+
+# Sprint 5.6 — Kalibrasyon / Senaryo Test Şemaları
+
+class PriorityScenarioRequest(BaseModel):
+    need_type: str
+    wait_hours: float = Field(default=0, ge=0, description="Talep oluştuktan sonra geçen süre (saat)")
+    temperature_celsius: float | None = None
+    vehicles_within_radius: int | None = None
+    is_raining: bool = False
+    is_night: bool = False
+
+
+class AppliedBonus(BaseModel):
+    name: str
+    value: float
+    detail: str
+
+
+class PriorityScenarioResponse(BaseModel):
+    need_type: str
+    base_score: float
+    context_bonus: float
+    applied_bonuses: list[AppliedBonus]
+    final_score: float
 
 
 

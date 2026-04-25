@@ -2,6 +2,8 @@ import 'leaflet/dist/leaflet.css';
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import OverrideAlertPanel from './OverrideAlertPanel';
+import { CLUSTER_STATUS } from '../constants/statuses';
 
 const kirmiziPin = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -155,6 +157,14 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* AI ROTA KAYDIRMA UYARILARI (Sprint 5.5 — Override) */}
+      <OverrideAlertPanel
+        onLocate={(lat, lon) => konumaGit(lat, lon)}
+        onOverrideExecuted={() => {
+          // Override sonrası küme listesi güncellensin
+        }}
+      />
+
       {/* --- ANA YERLEŞİM --- */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         
@@ -177,18 +187,18 @@ export default function Dashboard() {
                   key={cluster.cluster_id}
                   onClick={() => konumaGit(cluster.center_latitude, cluster.center_longitude)}
                   className={`border-l-[6px] p-4 rounded-r-xl shadow-md cursor-pointer transition-all duration-500 ease-in-out transform hover:-translate-y-1 flex flex-col justify-between ${
-                    cluster.status === 'yolda' 
+                    cluster.status === CLUSTER_STATUS.EN_ROUTE 
                       ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500' 
                       : 'bg-red-50 dark:bg-red-900/20 border-red-600'    
                   }`}
                 >
                   <div>
                     <div className="flex justify-between items-start mb-2">
-                        <h4 className={`font-black uppercase text-[13px] transition-colors duration-500 ${cluster.status === 'yolda' ? 'text-amber-700 dark:text-amber-500' : 'text-red-800 dark:text-red-500'}`}>
-                          {cluster.status === 'yolda' ? '⏳' : '🚨'} {cluster.cluster_name}
+                        <h4 className={`font-black uppercase text-[13px] transition-colors duration-500 ${cluster.status === CLUSTER_STATUS.EN_ROUTE ? 'text-amber-700 dark:text-amber-500' : 'text-red-800 dark:text-red-500'}`}>
+                          {cluster.status === CLUSTER_STATUS.EN_ROUTE ? '⏳' : '🚨'} {cluster.cluster_name}
                         </h4>
-                        <span className={`text-[10px] text-white px-2 py-1 rounded font-bold tracking-wider transition-colors duration-500 ${cluster.status === 'yolda' ? 'bg-amber-500 animate-pulse' : 'bg-red-600'}`}>
-                          {cluster.status === 'yolda' ? 'YOLDA' : cluster.priority_level}
+                        <span className={`text-[10px] text-white px-2 py-1 rounded font-bold tracking-wider transition-colors duration-500 ${cluster.status === CLUSTER_STATUS.EN_ROUTE ? 'bg-amber-500 animate-pulse' : 'bg-red-600'}`}>
+                          {cluster.status === CLUSTER_STATUS.EN_ROUTE ? 'YOLDA' : cluster.priority_level}
                         </span>
                     </div>
 
@@ -226,14 +236,14 @@ export default function Dashboard() {
                         setAraclarLoading(false);
                       }
                     }}
-                    disabled={cluster.status === 'resolved'}
+                    disabled={cluster.status === CLUSTER_STATUS.RESOLVED}
                     className={`w-full py-2.5 mt-auto rounded-lg text-xs font-bold transition-all duration-500 shadow-sm ${
-                      cluster.status === 'yolda' 
+                      cluster.status === CLUSTER_STATUS.EN_ROUTE 
                         ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700' 
                         : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white hover:shadow-md'
                     }`}
                   >
-                    {cluster.status === 'yolda' ? '✔️ YÖNLENDİRİLDİ' : '🚐 EKİP YÖNLENDİR'}
+                    {cluster.status === CLUSTER_STATUS.EN_ROUTE ? '✔️ YÖNLENDİRİLDİ' : '🚐 EKİP YÖNLENDİR'}
                   </button>
                 </div>
               ))}

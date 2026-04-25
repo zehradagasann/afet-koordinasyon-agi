@@ -86,6 +86,12 @@ export default function Sidebar({ isOpen, activeTab, setActiveTab, user }) {
             <span>Ekipler</span>
           </div>
 
+          <div className={getTabClass("kalibrasyon")} onClick={() => setActiveTab("kalibrasyon")}>
+            <span className="material-symbols-outlined">tune</span>
+            <span>Kalibrasyon</span>
+            <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">AI</span>
+          </div>
+
           {/* Ayırıcı Çizgi */}
           <div className="h-px bg-slate-200 dark:bg-slate-800 my-4 mx-2"></div>
 

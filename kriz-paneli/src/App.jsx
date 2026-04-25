@@ -10,6 +10,7 @@ import Dogrulanmamisİhbarlar from "./Dogrulanmamisİhbarlar.jsx";
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import Kalibrasyonlar from './pages/Kalibrasyonlar';
 import { authService } from './services/authService';
 
 function App() {
@@ -116,7 +117,8 @@ function App() {
         {activeTab === "harita" && <HaritaGorunumu />}
         {activeTab === "ekipler" && <Ekipler />}
         {activeTab === 'dogrulanmamislar' && <Dogrulanmamisİhbarlar />}
-        
+        {activeTab === 'kalibrasyon' && <Kalibrasyonlar />}
+
         {/* Profil sayfası eklemesi (Üstten profile tıklandığında menüden tetiklenebilir) */}
         {activeTab === 'profile' && <Profile user={user} onUpdateSuccess={handleProfileUpdate} />}
         
