@@ -466,26 +466,43 @@ Stok yetersizse HTTP 400 döner.
 """,
 )
 def assign_vehicle(data: schemas.AssignVehicleRequest, db: Session = Depends(get_db)):
-    vehicle = db.query(models.ReliefVehicle).filter(models.ReliefVehicle.id == data.vehicle_id).first()
-    if not vehicle:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
-    cluster = db.query(models.Cluster).filter(models.Cluster.id == data.cluster_id).first()
-    if not cluster:
-        raise HTTPException(status_code=404, detail="Cluster not found")
-    needed = cluster.total_persons_affected
-    if vehicle.tent_count < needed:
-        raise HTTPException(status_code=400, detail="Not enough tent stock")
-    vehicle.tent_count -= needed
-    db.commit()
-    db.refresh(vehicle)
-    send_assignment_notification(
-        cluster_name=cluster.cluster_name,
-        center_lat=cluster.center_latitude,
-        center_lon=cluster.center_longitude,
-        total_persons=needed,
-        need_type=cluster.need_type,
-    )
-    return {"message": "Vehicle assigned and stock updated", "remaining_tents": vehicle.tent_count}
+    try:
+        # 1. Araç veritabanında aranıyor
+        vehicle = db.query(models.ReliefVehicle).filter(models.ReliefVehicle.id == data.vehicle_id).first()
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Vehicle not found")
+        
+        # 2. Küme veritabanında aranıyor
+        cluster = db.query(models.Cluster).filter(models.Cluster.id == data.cluster_id).first()
+        if not cluster:
+            raise HTTPException(status_code=404, detail="Cluster not found")
+        
+        # 3. Stok kontrolü
+        needed = cluster.total_persons_affected
+        if vehicle.tent_count < needed:
+            raise HTTPException(status_code=400, detail="Not enough tent stock")
+        
+        # 4. Stok düşürülüyor
+        vehicle.tent_count -= needed
+
+        # 5. Veritabanında güncelleme
+        db.commit()
+
+        # 6. Bildirim gönderme
+        send_assignment_notification(
+            cluster_name=cluster.cluster_name,
+            center_lat=cluster.center_latitude,
+            center_lon=cluster.center_longitude,
+            total_persons=needed,
+            need_type=cluster.need_type,
+        )
+
+        return {"message": "Vehicle assigned and stock updated", "remaining_tents": vehicle.tent_count}
+
+    except Exception as e:
+        # 7. Hata olursa işlemi geri al (rollback)
+        db.rollback()
+        raise e
 
 
 # ── DEPREM VERİLERİ ────────────────────────────────────────────────────────
