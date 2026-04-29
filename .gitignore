@@ -231,3 +231,6 @@ Thumbs.db
 
 .cursor/
 memory-bank/
+
+# backups
+backups/
