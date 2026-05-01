@@ -137,6 +137,9 @@ cd backend
 # Kimlik doğrulama testleri
 python tests/test_auth.py
 
+# Güven skoru testleri
+python tests/test_trust_scorer.py
+
 # Araç önerisi ve ETA testleri
 python tests/test_vehicle_recommendation.py
 
@@ -144,11 +147,29 @@ python tests/test_vehicle_recommendation.py
 python tests/test_integration.py
 ```
 
+### Test Sonuçları
+
+#### ✅ Güven Skoru Test Süiti (7/7 Başarılı)
+Güven skoru algoritmasının tüm bileşenleri test edildi:
+- Haversine mesafe hesaplama
+- Sismik skor (deprem örtüşme analizi)
+- IP davranış skoru (spam ve teleport tespiti)
+- Konum tutarlılığı (Türkiye sınırları)
+- Bileşik güven skoru hesaplama
+- Gerçek dünya senaryoları (Kahramanmaraş depremi)
+- Bot saldırısı simülasyonu
+
+**Örnek Sonuçlar:**
+- Gerçek ihbar (deprem bölgesi): Güven skoru 0.9150 → ✅ Doğrulandı
+- Sahte ihbar (yurtdışı): Güven skoru 0.0893 → ❌ Reddedildi
+- Bot saldırısı (10 istek): Güven skoru 0.1953 → ❌ Engellendi
+
 ## 📚 Dokümantasyon
 
 - [Backend README](backend/README.md) - Backend detaylı kurulum ve kullanım
 - [API Dokümantasyonu](backend/docs/API.md) - Tüm endpoint'ler ve örnekler
 - [Veritabanı Şeması](backend/docs/DATABASE_SCHEMA.md) - ER diagram ve ilişkiler
+- [Güven Skoru Test Raporu](backend/TRUST_SCORER_TEST_REPORT.md) - Detaylı test sonuçları ve analiz
 - [Docker Kurulum Rehberi](DOCKER_SETUP.md) - Docker ile hızlı başlangıç
 
 ## 🎯 API Kullanım Örnekleri
