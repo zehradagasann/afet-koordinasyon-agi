@@ -75,12 +75,65 @@ python -m pytest tests/
 # Kimlik doğrulama testleri
 python tests/test_auth.py
 
+# Güven skoru testleri
+python tests/test_trust_scorer.py
+
+# Güven skoru entegrasyon testleri
+python tests/test_trust_scorer_integration.py
+
 # Araç önerisi ve ETA testleri
 python tests/test_vehicle_recommendation.py
 
 # Entegrasyon testleri
 python tests/test_integration.py
 ```
+
+### Test Sonuçları
+
+#### Güven Skoru Test Süiti
+**Durum:** ✅ Tüm testler başarılı (7/7)  
+**Süre:** ~0.4 saniye
+
+**Test Kapsamı:**
+- ✅ Haversine mesafe hesaplama (İstanbul-Ankara: 349.36 km)
+- ✅ Sismik skor hesaplama (deprem örtüşme analizi)
+- ✅ IP davranış skoru (spam tespiti, konum tutarlılığı)
+- ✅ Konum tutarlılığı (Türkiye sınırları kontrolü)
+- ✅ Bileşik güven skoru (ağırlıklı toplam)
+- ✅ Gerçek dünya senaryoları (Kahramanmaraş depremi simülasyonu)
+- ✅ Sınır değerleri ve özel durumlar
+
+#### Güven Skoru Entegrasyon Testi
+**Durum:** ✅ Tüm testler başarılı (3/3)  
+**Süre:** <0.1 saniye
+
+**Test Kapsamı:**
+- ✅ Rate Limiter ↔ Trust Scorer parametre senkronizasyonu
+- ✅ Davranış tutarlılığı analizi
+- ✅ Önerilen konfigürasyon uyumluluğu
+
+**Sonuç:** Rate Limiter ve Trust Scorer tamamen senkronize (1 dakikada 3 istek)
+
+**Algoritma Parametreleri:**
+```
+Ağırlıklar:
+  - Sismik (W_SISMIK): 0.60 (Deprem örtüşmesi)
+  - IP (W_IP): 0.25 (IP davranış analizi)
+  - Konum (W_KONUM): 0.15 (Konum tutarlılığı)
+
+Eşik Değerler:
+  - Doğrulama Eşiği: 0.50
+  - Deprem Yarıçapı: 50.0 km
+  - IP Spam Eşiği: 3 istek/1dk
+  - IP Max Mesafe: 200.0 km
+```
+
+**Test Senaryoları:**
+1. **Yüksek Güvenilirlik:** Deprem bölgesinde + temiz IP + Türkiye içi → Skor: 0.9150 ✅
+2. **Düşük Güvenilirlik:** Depremden uzak + spam IP + Türkiye dışı → Skor: 0.0893 ❌
+3. **Gerçek İhbar:** Kahramanmaraş'tan gelen ihbar → Skor: 0.6341 ✅
+4. **Bot Saldırısı:** 10 ardışık istek → Skor: 0.1953 ❌
+5. **Normal Frekans:** 3 istek/1dk → IP Skoru: 0.8298 ✅
 
 ## 📚 API Endpoint'leri
 
@@ -369,6 +422,7 @@ LOG_LEVEL=INFO
 
 - [API Dokümantasyonu](docs/API.md) - Tüm endpoint'ler ve örnekler
 - [Veritabanı Şeması](docs/DATABASE_SCHEMA.md) - ER diagram ve ilişkiler
+- [Güven Skoru Test Raporu](TRUST_SCORER_TEST_REPORT.md) - Detaylı test sonuçları ve analiz
 
 ## 📂 Modül Açıklamaları
 

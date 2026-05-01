@@ -33,8 +33,8 @@ VERIFIED_THRESHOLD   = 0.50   # Bu puanın üzeri → doğrulandı
 EARTHQUAKE_RADIUS_KM = 50.0   # Deprem merkezine maksimum mesafe
 
 # ── IP Davranış Analizi Parametreleri ─────────────────────────────────────
-IP_WINDOW_SECONDS    = 300    # 5 dakikalık pencere
-IP_SPAM_THRESHOLD    = 5      # Bu sayının üzerinde istek → spam şüphesi
+IP_WINDOW_SECONDS    = 60     # 1 dakikalık pencere
+IP_SPAM_THRESHOLD    = 3      # Bu sayının üzerinde istek → spam şüphesi
 IP_MAX_COORD_DIST_KM = 200.0  # Aynı IP'den gelen koordinatlar arası max mesafe
 
 # Bellek içi IP geçmişi: { "ip": [(timestamp, lat, lon), ...] }
@@ -90,7 +90,7 @@ def _ip_skoru(ip: str, lat: float, lon: float) -> float:
     IP adresinin davranış analizi skoru.
 
     İki alt kontrol:
-    a) Frekans analizi: Son 5 dakikada bu IP'den kaç istek geldi?
+    a) Frekans analizi: Son 1 dakikada bu IP'den kaç istek geldi?
        Çok fazla istek → spam şüphesi → skor düşer.
 
     b) Konum tutarlılığı: Bu IP'den daha önce gelen koordinatlar
