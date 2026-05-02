@@ -1,50 +1,34 @@
-import { useQuery } from "@tanstack/react-query";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
-import { clusterService } from "@/src/services/clusterService";
+import { SafeAreaView, ScrollView, Text, View } from "react-native";
+import {
+  Card,
+  EmptyState,
+  ErrorState,
+  LoadingOverlay,
+  ScreenHeader,
+} from "@/src/components/ui";
+import { useOverrideAlerts } from "@/src/hooks/useClusters";
 import type { VehicleOverrideAlert } from "@/src/types";
 
 export default function AlertsTabScreen() {
-  const { data, isLoading, refetch, error } = useQuery({
-    queryKey: ["override-alerts"],
-    queryFn: clusterService.getOverrideAlerts,
-  });
+  const { data, isLoading, refetch, error } = useOverrideAlerts();
 
   return (
     <SafeAreaView className="flex-1 bg-surface-card">
-      <View className="bg-primary px-4 py-4">
-        <Text className="text-white font-bold text-lg">Uyarılar</Text>
-        <Text className="text-white/80 text-xs mt-1">
-          Araç yönlendirme önerileri (AI)
-        </Text>
-      </View>
+      <ScreenHeader
+        title="Uyarılar"
+        subtitle="Araç yönlendirme önerileri (AI)"
+      />
 
       {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-text-secondary text-sm">Yükleniyor...</Text>
-        </View>
+        <LoadingOverlay message="Yükleniyor..." />
       ) : error ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-text-secondary text-center mb-3">
-            Uyarılar alınamadı.
-          </Text>
-          <Pressable
-            className="bg-primary rounded-button px-5 py-3"
-            onPress={() => refetch()}
-          >
-            <Text className="text-white font-semibold text-xs">Tekrar Dene</Text>
-          </Pressable>
-        </View>
+        <ErrorState message="Uyarılar alınamadı." onRetry={() => refetch()} />
       ) : !data || data.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-4xl mb-3">✅</Text>
-          <Text className="text-text-primary font-semibold text-base mb-1">
-            Şu an yönlendirme önerisi yok
-          </Text>
-          <Text className="text-text-secondary text-sm text-center">
-            Sistem küme ve araçları taramaya devam ediyor. Yeni kritik durum
-            oluştuğunda burada belirecek.
-          </Text>
-        </View>
+        <EmptyState
+          icon="✅"
+          title="Şu an yönlendirme önerisi yok"
+          description="Sistem küme ve araçları taramaya devam ediyor. Yeni kritik durum oluştuğunda burada belirecek."
+        />
       ) : (
         <ScrollView
           className="flex-1"
@@ -61,7 +45,7 @@ export default function AlertsTabScreen() {
 
 function AlertCard({ alert }: { alert: VehicleOverrideAlert }) {
   return (
-    <View className="bg-white rounded-card border border-border p-4 mb-4">
+    <Card className="mb-4">
       <Text className="text-xs font-semibold text-status-active uppercase mb-2">
         Önerilen yönlendirme
       </Text>
@@ -88,6 +72,6 @@ function AlertCard({ alert }: { alert: VehicleOverrideAlert }) {
       <Text className="text-text-muted text-xs">
         Araç ID: {alert.vehicle_id}
       </Text>
-    </View>
+    </Card>
   );
 }

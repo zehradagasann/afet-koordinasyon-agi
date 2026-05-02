@@ -1,9 +1,13 @@
 import { Tabs } from "expo-router";
 import { Text } from "react-native";
 import { usePendingRequestSync } from "@/src/hooks/usePendingRequestSync";
+import { useAuthStore } from "@/src/stores/authStore";
 
 export default function AppTabsLayout() {
   usePendingRequestSync();
+  const { user } = useAuthStore();
+  
+  const isStaff = user?.role === "volunteer" || user?.role === "coordinator" || user?.role === "admin";
 
   return (
     <Tabs
@@ -27,19 +31,39 @@ export default function AppTabsLayout() {
         name="index"
         options={{
           title: "Ana Sayfa",
-          tabBarIcon: ({ color }) => (
-            // Emoji icon keeps dependency footprint low.
-            <TabsIcon color={color} icon="🏠" />
-          ),
+          tabBarIcon: ({ color }) => <TabsIcon color={color} icon="🏠" />,
         }}
       />
+      
+      {/* Citizen Only Tabs */}
       <Tabs.Screen
         name="reports"
         options={{
           title: "Talepler",
           tabBarIcon: ({ color }) => <TabsIcon color={color} icon="📋" />,
+          href: isStaff ? null : "/(app)/(tabs)/reports",
         }}
       />
+
+      {/* Staff Only Tabs */}
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: "Görevler",
+          tabBarIcon: ({ color }) => <TabsIcon color={color} icon="🚑" />,
+          href: isStaff ? "/(app)/(tabs)/tasks" : null,
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: "Saha",
+          tabBarIcon: ({ color }) => <TabsIcon color={color} icon="🗺️" />,
+          href: isStaff ? "/(app)/(tabs)/map" : null,
+        }}
+      />
+
+      {/* Common Tabs */}
       <Tabs.Screen
         name="alerts"
         options={{

@@ -1,7 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   SafeAreaView,
@@ -9,64 +7,52 @@ import {
   View,
 } from "react-native";
 import { useMemo, useState } from "react";
-import { requestService } from "@/src/services/requestService";
+import {
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  LoadingOverlay,
+  ScreenHeader,
+  StatusBadge,
+  getNeedLabel,
+} from "@/src/components/ui";
+import { useRequests } from "@/src/hooks/useRequests";
 import type { DisasterRequest, RequestStatus } from "@/src/types";
-
-const STATUS_LABELS: Record<RequestStatus, string> = {
-  pending: "Bekliyor",
-  active: "Aktif",
-  assigned: "Atandı",
-  resolved: "Çözüldü",
-  cancelled: "İptal",
-};
-
-const STATUS_COLORS: Record<RequestStatus, string> = {
-  pending: "bg-status-pending/20 text-status-pending",
-  active: "bg-status-active/20 text-status-active",
-  assigned: "bg-blue-100 text-blue-600",
-  resolved: "bg-status-resolved/20 text-status-resolved",
-  cancelled: "bg-gray-100 text-gray-500",
-};
 
 function RequestItem({ item }: { item: DisasterRequest }) {
   const router = useRouter();
-  const colorClass = STATUS_COLORS[item.status];
   return (
-    <Pressable
-      className="bg-white rounded-card p-4 mb-3 border border-border"
-      onPress={() => router.push(`/(app)/requests/${item.id}`)}
-    >
-      <View className="flex-row justify-between items-start mb-2">
-        <Text className="text-text-primary font-semibold text-base flex-1">
-          {item.need_type.charAt(0).toUpperCase() + item.need_type.slice(1)}
-        </Text>
-        <View className={`rounded-full px-2.5 py-1 ${colorClass.split(" ")[0]}`}>
-          <Text className={`text-xs font-semibold ${colorClass.split(" ")[1]}`}>
-            {STATUS_LABELS[item.status]}
+    <Card className="mb-3">
+      <Pressable onPress={() => router.push(`/(app)/requests/${item.id}`)}>
+        <View className="flex-row justify-between items-start mb-2">
+          <Text className="text-text-primary font-semibold text-base flex-1">
+            {getNeedLabel(item.need_type)}
           </Text>
+          <StatusBadge status={item.status} />
         </View>
-      </View>
-      <Text className="text-text-secondary text-sm">
-        👥 {item.person_count} kişi
-      </Text>
-      <Text className="text-text-muted text-xs mt-1">
-        {new Date(item.created_at).toLocaleDateString("tr-TR", {
-          day: "2-digit",
-          month: "long",
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-      </Text>
-    </Pressable>
+        <Text className="text-text-secondary text-sm">
+          👥 {item.person_count} kişi
+        </Text>
+        <Text className="text-text-muted text-xs mt-1">
+          {new Date(item.created_at).toLocaleDateString("tr-TR", {
+            day: "2-digit",
+            month: "long",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </Text>
+      </Pressable>
+    </Card>
   );
 }
+
+type FilterKey = "all" | RequestStatus;
+type SortKey = "newest" | "oldest" | "priority";
 
 type RequestsListScreenProps = {
   embeddedInTabs?: boolean;
 };
-
-type SortKey = "newest" | "oldest" | "priority";
-type FilterKey = "all" | RequestStatus;
 
 export default function RequestsListScreen({
   embeddedInTabs = false,
@@ -75,10 +61,7 @@ export default function RequestsListScreen({
   const [filter, setFilter] = useState<FilterKey>("all");
   const [sortBy, setSortBy] = useState<SortKey>("newest");
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["requests"],
-    queryFn: requestService.getAll,
-  });
+  const { data, isLoading, error, refetch } = useRequests();
 
   const filteredAndSorted = useMemo(() => {
     const items = [...(data ?? [])];
@@ -122,28 +105,15 @@ export default function RequestsListScreen({
 
   return (
     <SafeAreaView className="flex-1 bg-surface-card">
-      <View className="bg-primary px-4 py-4 flex-row items-center gap-3">
-        {!embeddedInTabs && (
-          <Pressable onPress={() => router.back()}>
-            <Text className="text-white text-xl font-bold">←</Text>
-          </Pressable>
-        )}
-        <Text className="text-white font-bold text-lg">Taleplerim</Text>
-      </View>
+      <ScreenHeader
+        title="Taleplerim"
+        onBack={embeddedInTabs ? undefined : () => router.back()}
+      />
 
       {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#E63946" />
-        </View>
+        <LoadingOverlay />
       ) : error ? (
-        <View className="flex-1 items-center justify-center p-6">
-          <Text className="text-text-secondary text-center mb-4">
-            Talepler yüklenemedi
-          </Text>
-          <Pressable className="bg-primary rounded-button px-6 py-3" onPress={() => refetch()}>
-            <Text className="text-white font-semibold">Tekrar Dene</Text>
-          </Pressable>
-        </View>
+        <ErrorState message="Talepler yüklenemedi" onRetry={() => refetch()} />
       ) : (
         <FlatList
           data={filteredAndSorted}
@@ -210,20 +180,16 @@ export default function RequestsListScreen({
             </View>
           }
           ListEmptyComponent={
-            <View className="items-center py-16">
-              <Text className="text-4xl mb-4">📋</Text>
-              <Text className="text-text-secondary text-center">
-                {filter === "all"
+            <EmptyState
+              icon="📋"
+              title={
+                filter === "all"
                   ? "Henüz talebiniz yok"
-                  : "Bu filtre için talep bulunamadı"}
-              </Text>
-              <Pressable
-                className="bg-primary rounded-button px-6 py-3 mt-4"
-                onPress={() => router.push("/(app)/request/location")}
-              >
-                <Text className="text-white font-semibold">İlk Talebimi Oluştur</Text>
-              </Pressable>
-            </View>
+                  : "Bu filtre için talep bulunamadı"
+              }
+              actionTitle="İlk Talebimi Oluştur"
+              onAction={() => router.push("/(app)/request/location")}
+            />
           }
         />
       )}

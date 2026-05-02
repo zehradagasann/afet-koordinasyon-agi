@@ -9,16 +9,21 @@ import {
   View,
 } from "react-native";
 import { z } from "zod";
+import { Button, ProgressBar, ScreenHeader } from "@/src/components/ui";
 import { useUIStore } from "@/src/stores/uiStore";
+import { personCountSchema } from "@/src/lib/validations";
 
 const schema = z.object({
-  personCount: z
-    .string()
-    .min(1, "Kişi sayısı girin")
-    .refine((v) => {
-      const n = parseInt(v, 10);
-      return !isNaN(n) && n >= 1 && n <= 999;
-    }, "1 ile 999 arasında bir sayı girin"),
+  personCount: z.string().superRefine((val, ctx) => {
+    const num = parseInt(val, 10);
+    const result = personCountSchema.safeParse(num);
+    if (!result.success) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: result.error.errors[0].message,
+      });
+    }
+  }),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -46,21 +51,13 @@ export default function PersonsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
-      <View className="bg-primary px-4 py-4 flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()}>
-          <Text className="text-white text-xl font-bold">←</Text>
-        </Pressable>
-        <View>
-          <Text className="text-white font-bold text-lg">Kişi Sayısı</Text>
-          <Text className="text-white/70 text-xs">Adım 2 / 3</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Kişi Sayısı"
+        subtitle="Adım 2 / 4"
+        onBack={() => router.back()}
+      />
 
-      {/* Progress Bar */}
-      <View className="h-1.5 bg-border">
-        <View className="h-1.5 bg-primary w-2/3" />
-      </View>
+      <ProgressBar current={2} total={4} />
 
       <View className="flex-1 p-6">
         <Text className="text-xl font-bold text-text-primary mb-2">
@@ -115,12 +112,11 @@ export default function PersonsScreen() {
         </View>
 
         {/* Next */}
-        <Pressable
-          className="bg-primary rounded-button py-4 items-center"
+        <Button
+          title="SONRAKİ →"
+          size="lg"
           onPress={handleSubmit(onSubmit)}
-        >
-          <Text className="text-white font-bold text-base">SONRAKI →</Text>
-        </Pressable>
+        />
       </View>
     </SafeAreaView>
   );

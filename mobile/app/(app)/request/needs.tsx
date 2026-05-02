@@ -7,6 +7,13 @@ import {
   Text,
   View,
 } from "react-native";
+import {
+  AlertBanner,
+  Button,
+  ProgressBar,
+  ScreenHeader,
+} from "@/src/components/ui";
+import { getNeedIcon, getNeedLabel } from "@/src/components/ui/Badge";
 import type { NeedType } from "@/src/types";
 import { useUIStore } from "@/src/stores/uiStore";
 
@@ -53,21 +60,13 @@ export default function NeedsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
-      <View className="bg-primary px-4 py-4 flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()}>
-          <Text className="text-white text-xl font-bold">←</Text>
-        </Pressable>
-        <View>
-          <Text className="text-white font-bold text-lg">İhtiyaç Türü</Text>
-          <Text className="text-white/70 text-xs">Adım 3 / 3</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="İhtiyaç Türü"
+        subtitle="Adım 3 / 4"
+        onBack={() => router.back()}
+      />
 
-      {/* Progress Bar */}
-      <View className="h-1.5 bg-border">
-        <View className="h-1.5 bg-primary w-full" />
-      </View>
+      <ProgressBar current={3} total={4} />
 
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
         <Text className="text-xl font-bold text-text-primary mb-2">
@@ -77,11 +76,7 @@ export default function NeedsScreen() {
           Birden fazla seçebilirsiniz
         </Text>
 
-        {error && (
-          <View className="bg-primary/10 rounded-card p-3 mb-4">
-            <Text className="text-primary text-sm">{error}</Text>
-          </View>
-        )}
+        {error && <AlertBanner variant="error" title={error} />}
 
         {/* Grid */}
         <View className="flex-row flex-wrap gap-3 mb-6">
@@ -116,21 +111,22 @@ export default function NeedsScreen() {
           <View className="bg-primary/10 rounded-card p-3 mb-4">
             <Text className="text-primary text-sm font-medium">
               {selected.length} ihtiyaç türü seçildi:{" "}
-              {selected
-                .map((t) => NEED_OPTIONS.find((o) => o.type === t)?.label)
-                .join(", ")}
+              {selected.map((t) => getNeedLabel(t)).join(", ")}
             </Text>
+            {selected.length > 1 && (
+              <Text className="text-text-secondary text-xs mt-1">
+                Her ihtiyaç türü için ayrı talep oluşturulacaktır
+              </Text>
+            )}
           </View>
         )}
 
-        <Pressable
-          className={`rounded-button py-4 items-center ${
-            selected.length > 0 ? "bg-primary" : "bg-primary/40"
-          }`}
+        <Button
+          title="SONRAKİ →"
+          size="lg"
+          disabled={selected.length === 0}
           onPress={handleNext}
-        >
-          <Text className="text-white font-bold text-base">SONRAKI →</Text>
-        </Pressable>
+        />
       </ScrollView>
     </SafeAreaView>
   );

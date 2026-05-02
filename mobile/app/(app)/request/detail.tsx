@@ -5,7 +5,6 @@ import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   SafeAreaView,
@@ -22,6 +21,10 @@ import {
   type PendingRequest,
 } from "@/src/stores/uiStore";
 import { AppError } from "@/src/services/api";
+import { Button, Card, ProgressBar, ScreenHeader } from "@/src/components/ui";
+import { getNeedLabel } from "@/src/components/ui/Badge";
+import { useQueryClient } from "@tanstack/react-query";
+import { requestKeys } from "@/src/hooks/useRequests";
 
 const schema = z.object({
   description: z.string().optional(),
@@ -31,6 +34,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function RequestDetailScreen() {
   const router = useRouter();
+  const qc = useQueryClient();
   const {
     requestDraft,
     updateDraft,
@@ -160,30 +164,31 @@ export default function RequestDetailScreen() {
       return;
     }
 
-    const payload: PendingRequest = {
-      id: `${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
-      createdAt: Date.now(),
-      latitude: selectedLocation.latitude,
-      longitude: selectedLocation.longitude,
-      needType: requestDraft.needTypes[0],
-      personCount: requestDraft.personCount,
-      description: data.description?.trim() || undefined,
-      photoUris: [...requestDraft.photoUris],
-      audioUri: requestDraft.audioUri,
-    };
+    const description = data.description?.trim() || undefined;
+
+    // Backend tekil need_type kabul ettiğinden, birden fazla ihtiyaç türü
+    // seçildiğinde her biri için ayrı talep oluşturuyoruz.
+    const needTypes = requestDraft.needTypes;
 
     try {
-      const created = await requestService.create({
-        latitude: payload.latitude,
-        longitude: payload.longitude,
-        need_type: payload.needType,
-        person_count: payload.personCount,
-        description: payload.description,
-      });
+      let lastCreatedId: string | null = null;
 
-      // Upload photos if any
-      for (const uri of payload.photoUris) {
-        await requestService.uploadPhoto(created.id, uri);
+      for (const needType of needTypes) {
+        const created = await requestService.create({
+          latitude: selectedLocation.latitude,
+          longitude: selectedLocation.longitude,
+          need_type: needType,
+          person_count: requestDraft.personCount,
+          description,
+        });
+        lastCreatedId = created.id;
+
+        // Fotoğrafları yalnızca ilk talebe ekle (aynı görseli tekrarlamamak için)
+        if (needType === needTypes[0]) {
+          for (const uri of requestDraft.photoUris) {
+            await requestService.uploadPhoto(created.id, uri);
+          }
+        }
       }
 
       if (sound) {
@@ -192,8 +197,14 @@ export default function RequestDetailScreen() {
         setSound(null);
       }
 
+      qc.invalidateQueries({ queryKey: requestKeys.all });
       resetDraft();
-      router.replace(`/(app)/requests/${created.id}`);
+      
+      if (lastCreatedId) {
+        router.replace(`/(app)/requests/${lastCreatedId}`);
+      } else {
+        router.replace("/(app)/(tabs)/reports");
+      }
     } catch (err) {
       if (err instanceof AppError && err.isNetworkError) {
         if (recording) {
@@ -209,7 +220,21 @@ export default function RequestDetailScreen() {
           await sound.unloadAsync().catch(() => undefined);
           setSound(null);
         }
-        enqueuePendingRequest(payload);
+        // Offline durumda her ihtiyaç türü için ayrı pending request oluştur
+        for (const needType of needTypes) {
+          const payload: PendingRequest = {
+            id: `${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
+            createdAt: Date.now(),
+            latitude: selectedLocation.latitude,
+            longitude: selectedLocation.longitude,
+            needType,
+            personCount: requestDraft.personCount,
+            description,
+            photoUris: needType === needTypes[0] ? [...requestDraft.photoUris] : [],
+            audioUri: needType === needTypes[0] ? requestDraft.audioUri : null,
+          };
+          enqueuePendingRequest(payload);
+        }
         resetDraft();
         alert(
           "İnternet bağlantınız kesildi. Talebiniz kaydedildi ve bağlantı gelince otomatik gönderilecek."
@@ -225,16 +250,13 @@ export default function RequestDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
-      <View className="bg-primary px-4 py-4 flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()}>
-          <Text className="text-white text-xl font-bold">←</Text>
-        </Pressable>
-        <View>
-          <Text className="text-white font-bold text-lg">Ek Bilgi</Text>
-          <Text className="text-white/70 text-xs">İsteğe bağlı</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Ek Bilgi"
+        subtitle="Adım 4 / 4 (İsteğe bağlı)"
+        onBack={() => router.back()}
+      />
+
+      <ProgressBar current={4} total={4} />
 
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
         <Text className="text-xl font-bold text-text-primary mb-2">
@@ -245,7 +267,7 @@ export default function RequestDetailScreen() {
         </Text>
 
         {/* Summary */}
-        <View className="bg-surface-card rounded-card p-4 mb-6">
+        <Card className="mb-6 bg-surface-card">
           <Text className="text-xs font-semibold text-text-secondary uppercase mb-3">
             Talep Özeti
           </Text>
@@ -258,7 +280,7 @@ export default function RequestDetailScreen() {
           <View className="flex-row gap-2 mb-2">
             <Text className="text-text-muted text-sm w-28">İhtiyaçlar:</Text>
             <Text className="text-text-primary font-medium text-sm flex-1">
-              {requestDraft.needTypes.join(", ")}
+              {requestDraft.needTypes.map(getNeedLabel).join(", ")}
             </Text>
           </View>
           {selectedLocation && (
@@ -270,7 +292,7 @@ export default function RequestDetailScreen() {
               </Text>
             </View>
           )}
-        </View>
+        </Card>
 
         {/* Description */}
         <View className="mb-6">
@@ -283,7 +305,7 @@ export default function RequestDetailScreen() {
             name="description"
             render={({ field: { onChange, value, onBlur } }) => (
               <TextInput
-                className="border border-border rounded-input px-4 py-3 text-text-primary text-sm"
+                className="border border-border rounded-input px-4 py-3 text-text-primary text-sm bg-white"
                 placeholder="Durumunuzu kısaca anlatın..."
                 placeholderTextColor="#9CA3AF"
                 multiline
@@ -310,11 +332,11 @@ export default function RequestDetailScreen() {
                 <View key={uri} className="relative">
                   <Image
                     source={{ uri }}
-                    className="w-24 h-24 rounded-card"
+                    className="w-24 h-24 rounded-card border border-border"
                     resizeMode="cover"
                   />
                   <Pressable
-                    className="absolute -top-2 -right-2 bg-primary rounded-full w-5 h-5 items-center justify-center"
+                    className="absolute -top-2 -right-2 bg-status-urgent rounded-full w-6 h-6 items-center justify-center shadow-sm"
                     onPress={() => removePhoto(uri)}
                   >
                     <Text className="text-white text-xs font-bold">×</Text>
@@ -322,7 +344,7 @@ export default function RequestDetailScreen() {
                 </View>
               ))}
               <Pressable
-                className="w-24 h-24 rounded-card border-2 border-dashed border-border items-center justify-center"
+                className="w-24 h-24 rounded-card border-2 border-dashed border-border items-center justify-center bg-surface-card"
                 onPress={pickPhoto}
               >
                 <Text className="text-2xl">📷</Text>
@@ -342,7 +364,7 @@ export default function RequestDetailScreen() {
           {!requestDraft.audioUri ? (
             <Pressable
               className={`rounded-card border-2 border-dashed p-4 items-center ${
-                isRecording ? "border-status-urgent bg-status-urgent/5" : "border-border"
+                isRecording ? "border-status-urgent bg-status-urgent/5" : "border-border bg-surface-card"
               }`}
               onPress={isRecording ? stopRecording : startRecording}
             >
@@ -359,46 +381,34 @@ export default function RequestDetailScreen() {
               </Text>
             </Pressable>
           ) : (
-            <View className="bg-surface-card rounded-card border border-border p-4">
-              <Text className="text-text-primary font-medium text-sm mb-2">
+            <Card className="bg-surface-card">
+              <Text className="text-status-active font-medium text-sm mb-3">
                 ✅ Sesli not eklendi
               </Text>
               <View className="flex-row gap-2">
-                <Pressable
-                  className="bg-primary rounded-button px-4 py-2"
+                <Button
+                  title={isPlaying ? "Çalıyor..." : "Dinle"}
+                  size="sm"
                   onPress={playAudio}
-                >
-                  <Text className="text-white text-xs font-semibold">
-                    {isPlaying ? "Çalıyor..." : "Dinle"}
-                  </Text>
-                </Pressable>
-                <Pressable
-                  className="bg-white border border-border rounded-button px-4 py-2"
+                />
+                <Button
+                  title="Kaldır"
+                  variant="outline"
+                  size="sm"
                   onPress={removeAudio}
-                >
-                  <Text className="text-text-secondary text-xs font-semibold">
-                    Kaldır
-                  </Text>
-                </Pressable>
+                />
               </View>
-            </View>
+            </Card>
           )}
         </View>
 
         {/* Submit */}
-        <Pressable
-          className={`rounded-button py-4 items-center ${isSubmitting ? "bg-primary/60" : "bg-primary"}`}
+        <Button
+          title="TALEBİ GÖNDER ✓"
+          size="lg"
+          loading={isSubmitting}
           onPress={handleSubmit(onSubmit)}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-white font-bold text-base">
-              TALEBİ GÖNDER ✓
-            </Text>
-          )}
-        </Pressable>
+        />
       </ScrollView>
     </SafeAreaView>
   );

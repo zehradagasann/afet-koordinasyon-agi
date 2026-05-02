@@ -149,6 +149,36 @@ export interface VehicleOverrideAlert {
   score_difference: number;
 }
 
+// ─── Cluster & Vehicle ─────────────────────────────────────────────────────
+
+export interface Cluster {
+  cluster_id: string;
+  need_type: string;
+  cluster_name: string;
+  center_latitude: number;
+  center_longitude: number;
+  request_count: number;
+  total_persons_affected: number;
+  average_priority_score: number;
+  priority_level: "low" | "medium" | "high" | "critical";
+  status: "active" | "resolved" | "en_route";
+}
+
+export interface Vehicle {
+  id: string;
+  vehicle_type: string;
+  capacity: string;
+  latitude: number;
+  longitude: number;
+  vehicle_status: "available" | "en_route" | "on_site" | "maintenance";
+  assigned_cluster_id?: string;
+  tent_count: number;
+  food_count: number;
+  water_count: number;
+  medical_count: number;
+  blanket_count: number;
+}
+
 // ─── Navigation ────────────────────────────────────────────────────────────
 
 export type RootStackParamList = {

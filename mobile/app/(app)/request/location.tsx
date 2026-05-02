@@ -3,13 +3,13 @@ import * as LocationLib from "expo-location";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   SafeAreaView,
   ScrollView,
   Text,
   View,
 } from "react-native";
 import { LocationMap } from "@/components/location-map";
+import { Button, Card, ProgressBar, ScreenHeader } from "@/src/components/ui";
 import { useLocationStore } from "@/src/stores/locationStore";
 
 export default function LocationConfirmScreen() {
@@ -57,21 +57,13 @@ export default function LocationConfirmScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
-      <View className="bg-primary px-4 py-4 flex-row items-center gap-3">
-        <Pressable onPress={() => router.back()}>
-          <Text className="text-white text-xl font-bold">←</Text>
-        </Pressable>
-        <View>
-          <Text className="text-white font-bold text-lg">Konum Tespiti</Text>
-          <Text className="text-white/70 text-xs">Adım 1 / 3</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Konum Tespiti"
+        subtitle="Adım 1 / 4"
+        onBack={() => router.back()}
+      />
 
-      {/* Progress Bar */}
-      <View className="h-1.5 bg-border">
-        <View className="h-1.5 bg-primary w-1/3" />
-      </View>
+      <ProgressBar current={1} total={4} />
 
       <ScrollView
         className="flex-1"
@@ -105,7 +97,7 @@ export default function LocationConfirmScreen() {
         )}
 
         {/* Coordinate Card */}
-        <View className="bg-surface-card rounded-card p-4 mb-4">
+        <Card className="mb-4">
           <Text className="text-xs font-semibold text-text-secondary uppercase mb-3">
             Tespit Edilen Konum
           </Text>
@@ -138,35 +130,26 @@ export default function LocationConfirmScreen() {
               Konum verisi bekleniyor...
             </Text>
           )}
-        </View>
+        </Card>
 
         {/* Refresh */}
-        <Pressable
-          className="border-2 border-primary rounded-button py-3 items-center mb-4"
+        <Button
+          title="GPS ile Tekrar Ölç"
+          icon="📍"
+          variant="outline"
+          size="md"
+          className="mb-4"
+          loading={isRefreshing}
           onPress={refreshLocation}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <ActivityIndicator color="#E63946" />
-          ) : (
-            <Text className="text-primary font-semibold">
-              📍 GPS ile Tekrar Ölç
-            </Text>
-          )}
-        </Pressable>
+        />
 
         {/* Confirm */}
-        <Pressable
-          className={`rounded-button py-4 items-center ${
-            activeLocation ? "bg-primary" : "bg-primary/40"
-          }`}
-          onPress={handleConfirm}
+        <Button
+          title="BU KONUMU ONAYLA →"
+          size="lg"
           disabled={!activeLocation}
-        >
-          <Text className="text-white font-bold text-base">
-            BU KONUMU ONAYLA →
-          </Text>
-        </Pressable>
+          onPress={handleConfirm}
+        />
       </ScrollView>
     </SafeAreaView>
   );
