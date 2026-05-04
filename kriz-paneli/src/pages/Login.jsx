@@ -143,7 +143,7 @@ export default function Login({ onLoginSuccess, onSwitchToRegister }) {
             </Button>
           </form>
 
-          <div className="mt-6 text-center space-y-4">
+          <div className="mt-6 text-center">
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Hesabınız yok mu?{' '}
               <button
@@ -154,23 +154,6 @@ export default function Login({ onLoginSuccess, onSwitchToRegister }) {
                 Kayıt Ol
               </button>
             </p>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-slate-900 text-slate-400">veya test etmek istersen</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onLoginSuccess({ full_name: "Misafir Geliştirici", email: "misafir@test.com", role: "guest" })}
-              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold transition-colors"
-            >
-              Kayıt Olmadan Hızlı Gözat
-            </button>
           </div>
         </div>
 

@@ -13,6 +13,27 @@ import Profile from './pages/Profile';
 import Kalibrasyonlar from './pages/Kalibrasyonlar';
 import { authService } from './services/authService';
 
+const ROLE_TABS = {
+  admin:       ['aktif', 'kumeler', 'harita', 'ekipler', 'kalibrasyon', 'dogrulanmamislar', 'profile'],
+  coordinator: ['aktif', 'kumeler', 'harita', 'ekipler', 'dogrulanmamislar', 'profile'],
+  volunteer:   ['aktif', 'harita', 'profile'],
+  citizen:     ['profile'],
+};
+
+const canAccessTab = (role, tab) => (ROLE_TABS[role] ?? ROLE_TABS.citizen).includes(tab);
+
+const defaultTabForRole = (role) => role === 'citizen' ? 'profile' : 'aktif';
+
+function AccessDenied() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-4 text-slate-400 dark:text-slate-500">
+      <span className="material-symbols-outlined text-6xl">lock</span>
+      <h2 className="text-xl font-semibold text-slate-600 dark:text-slate-300">Erişim Kısıtlı</h2>
+      <p className="text-sm">Bu sayfayı görüntülemek için yeterli yetkiniz yok.</p>
+    </div>
+  );
+}
+
 function App() {
   // --- KULLANICI VE GİRİŞ DURUMU YÖNETİMİ ---
   const [user, setUser] = useState(null);
@@ -33,7 +54,7 @@ function App() {
           // Token'ın geçerliliğini kontrol et
           const currentUser = await authService.getCurrentUser();
           setUser(currentUser);
-          setActiveTab('aktif');
+          setActiveTab(defaultTabForRole(currentUser.role));
         } catch (error) {
           // Token geçersizse logout yap
           console.error('Token doğrulama hatası:', error);
@@ -50,12 +71,12 @@ function App() {
   // --- YETKİLENDİRME FONKSİYONLARI ---
   const handleLoginSuccess = (userData) => {
     setUser(userData);
-    setActiveTab('aktif');
+    setActiveTab(defaultTabForRole(userData.role));
   };
 
   const handleRegisterSuccess = (userData) => {
     setUser(userData);
-    setActiveTab('aktif');
+    setActiveTab(defaultTabForRole(userData.role));
   };
 
   const handleLogout = () => {
@@ -111,16 +132,20 @@ function App() {
           onProfileClick={() => setActiveTab('profile')}
         />
         
-        {/* İÇERİK BÖLÜMÜ: Sol menüden hangi sekmeye tıklandıysa o ekran */}
-        {activeTab === "aktif" && <Dashboard />}
-        {activeTab === "kumeler" && <Kumeler />}
-        {activeTab === "harita" && <HaritaGorunumu />}
-        {activeTab === "ekipler" && <Ekipler />}
-        {activeTab === 'dogrulanmamislar' && <Dogrulanmamisİhbarlar />}
-        {activeTab === 'kalibrasyon' && <Kalibrasyonlar />}
-
-        {/* Profil sayfası eklemesi (Üstten profile tıklandığında menüden tetiklenebilir) */}
-        {activeTab === 'profile' && <Profile user={user} onUpdateSuccess={handleProfileUpdate} />}
+        {/* İÇERİK BÖLÜMÜ: rol kontrolü yapıldıktan sonra sekme render edilir */}
+        {!canAccessTab(user?.role, activeTab) ? (
+          <AccessDenied />
+        ) : (
+          <>
+            {activeTab === "aktif" && <Dashboard />}
+            {activeTab === "kumeler" && <Kumeler />}
+            {activeTab === "harita" && <HaritaGorunumu />}
+            {activeTab === "ekipler" && <Ekipler />}
+            {activeTab === 'dogrulanmamislar' && <Dogrulanmamisİhbarlar />}
+            {activeTab === 'kalibrasyon' && <Kalibrasyonlar />}
+            {activeTab === 'profile' && <Profile user={user} onUpdateSuccess={handleProfileUpdate} />}
+          </>
+        )}
         
       </main>
     </div>

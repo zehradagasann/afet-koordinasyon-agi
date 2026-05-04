@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
-import { USER_ROLES } from '../constants/formOptions'; 
+import { USER_ROLES } from '../constants/formOptions';
 
+const ROLE_TABS = {
+  admin:       ['aktif', 'kumeler', 'harita', 'ekipler', 'kalibrasyon', 'dogrulanmamislar'],
+  coordinator: ['aktif', 'kumeler', 'harita', 'ekipler', 'dogrulanmamislar'],
+  volunteer:   ['aktif', 'harita'],
+  citizen:     [],
+};
+
+const canSee = (role, tab) => (ROLE_TABS[role] ?? []).includes(tab);
 
 export default function Sidebar({ isOpen, activeTab, setActiveTab, user }) {
   const [dogrulanmamisSayi, setDogrulanmamisSayi] = useState(null);
@@ -65,51 +73,62 @@ export default function Sidebar({ isOpen, activeTab, setActiveTab, user }) {
         
         {/* Menü Linkleri */}
         <nav className="flex-1 px-4 py-6 space-y-2">
-          
-          <div className={getTabClass("aktif")} onClick={() => setActiveTab("aktif")}>
-            <span className="material-symbols-outlined">warning</span>
-            <span>Aktif İhbarlar</span>
-          </div>
-          
-          <div className={getTabClass("kumeler")} onClick={() => setActiveTab("kumeler")}>
-            <span className="material-symbols-outlined">hub</span>
-            <span>Kümeler</span>
-          </div>
 
-          <div className={getTabClass("harita")} onClick={() => setActiveTab("harita")}>
-            <span className="material-symbols-outlined">map</span>
-            <span>Harita Görünümü</span>
-          </div>
+          {canSee(user?.role, 'aktif') && (
+            <div className={getTabClass("aktif")} onClick={() => setActiveTab("aktif")}>
+              <span className="material-symbols-outlined">warning</span>
+              <span>Aktif İhbarlar</span>
+            </div>
+          )}
 
-          <div className={getTabClass("ekipler")} onClick={() => setActiveTab("ekipler")}>
-            <span className="material-symbols-outlined">groups</span>
-            <span>Ekipler</span>
-          </div>
+          {canSee(user?.role, 'kumeler') && (
+            <div className={getTabClass("kumeler")} onClick={() => setActiveTab("kumeler")}>
+              <span className="material-symbols-outlined">hub</span>
+              <span>Kümeler</span>
+            </div>
+          )}
 
-          <div className={getTabClass("kalibrasyon")} onClick={() => setActiveTab("kalibrasyon")}>
-            <span className="material-symbols-outlined">tune</span>
-            <span>Kalibrasyon</span>
-            <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">AI</span>
-          </div>
+          {canSee(user?.role, 'harita') && (
+            <div className={getTabClass("harita")} onClick={() => setActiveTab("harita")}>
+              <span className="material-symbols-outlined">map</span>
+              <span>Harita Görünümü</span>
+            </div>
+          )}
 
-          {/* Ayırıcı Çizgi */}
-          <div className="h-px bg-slate-200 dark:bg-slate-800 my-4 mx-2"></div>
+          {canSee(user?.role, 'ekipler') && (
+            <div className={getTabClass("ekipler")} onClick={() => setActiveTab("ekipler")}>
+              <span className="material-symbols-outlined">groups</span>
+              <span>Ekipler</span>
+            </div>
+          )}
 
-          {/* DOĞRULANMAMIŞLAR BUTONU (Özel stilli) */}
-          <div 
-            className={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all cursor-pointer ${
-              activeTab === "dogrulanmamislar" 
-                ? "bg-red-600 text-white shadow-lg shadow-red-600/40" 
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800/50"
-            }`}
-            onClick={() => setActiveTab("dogrulanmamislar")}
-          >
-            <span className={`material-symbols-outlined transition-colors ${activeTab !== "dogrulanmamislar" && "group-hover:text-red-500"}`}>pending_actions</span>
-            <span>Doğrulanmamışlar</span>
-            <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse ${
-              activeTab === "dogrulanmamislar" ? "bg-white text-red-600" : "bg-red-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.6)]"
-            }`}>{dogrulanmamisSayi ?? '...'}</span>
-          </div>
+          {canSee(user?.role, 'kalibrasyon') && (
+            <div className={getTabClass("kalibrasyon")} onClick={() => setActiveTab("kalibrasyon")}>
+              <span className="material-symbols-outlined">tune</span>
+              <span>Kalibrasyon</span>
+              <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">AI</span>
+            </div>
+          )}
+
+          {canSee(user?.role, 'dogrulanmamislar') && (
+            <>
+              <div className="h-px bg-slate-200 dark:bg-slate-800 my-4 mx-2"></div>
+              <div
+                className={`group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all cursor-pointer ${
+                  activeTab === "dogrulanmamislar"
+                    ? "bg-red-600 text-white shadow-lg shadow-red-600/40"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800/50"
+                }`}
+                onClick={() => setActiveTab("dogrulanmamislar")}
+              >
+                <span className={`material-symbols-outlined transition-colors ${activeTab !== "dogrulanmamislar" && "group-hover:text-red-500"}`}>pending_actions</span>
+                <span>Doğrulanmamışlar</span>
+                <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse ${
+                  activeTab === "dogrulanmamislar" ? "bg-white text-red-600" : "bg-red-500 text-white shadow-[0_0_8px_rgba(239,68,68,0.6)]"
+                }`}>{dogrulanmamisSayi ?? '...'}</span>
+              </div>
+            </>
+          )}
 
         </nav>
 
