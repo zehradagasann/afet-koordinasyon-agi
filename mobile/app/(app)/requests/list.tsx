@@ -1,8 +1,8 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   FlatList,
   Pressable,
-  SafeAreaView,
   Text,
   View,
 } from "react-native";
@@ -17,7 +17,7 @@ import {
   StatusBadge,
   getNeedLabel,
 } from "@/src/components/ui";
-import { useRequests } from "@/src/hooks/useRequests";
+import { useMyRequests } from "@/src/hooks/useRequests";
 import type { DisasterRequest, RequestStatus } from "@/src/types";
 
 function RequestItem({ item }: { item: DisasterRequest }) {
@@ -61,7 +61,7 @@ export default function RequestsListScreen({
   const [filter, setFilter] = useState<FilterKey>("all");
   const [sortBy, setSortBy] = useState<SortKey>("newest");
 
-  const { data, isLoading, error, refetch } = useRequests();
+  const { data, isLoading, error, refetch } = useMyRequests();
 
   const filteredAndSorted = useMemo(() => {
     const items = [...(data ?? [])];
@@ -90,11 +90,12 @@ export default function RequestsListScreen({
   }, [data, filter, sortBy]);
 
   const FILTER_OPTIONS: { key: FilterKey; label: string }[] = [
-    { key: "all", label: "Tümü" },
-    { key: "pending", label: "Bekliyor" },
-    { key: "active", label: "Aktif" },
-    { key: "assigned", label: "Atandı" },
-    { key: "resolved", label: "Çözüldü" },
+    { key: "all",       label: "Tümü"     },
+    { key: "pending",   label: "Bekliyor" },
+    { key: "active",    label: "Aktif"    },
+    { key: "assigned",  label: "Atandı"   },
+    { key: "resolved",  label: "Çözüldü"  },
+    { key: "cancelled", label: "İptal"    },
   ];
 
   const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -184,11 +185,16 @@ export default function RequestsListScreen({
               icon="📋"
               title={
                 filter === "all"
-                  ? "Henüz talebiniz yok"
-                  : "Bu filtre için talep bulunamadı"
+                  ? "Henüz talebiniz bulunmuyor"
+                  : "Bu filtrede talep bulunamadı"
               }
-              actionTitle="İlk Talebimi Oluştur"
-              onAction={() => router.push("/(app)/request/location")}
+              description={
+                filter === "all"
+                  ? "Yardım ihtiyacınız olduğunda hızlıca talep oluşturabilirsiniz."
+                  : undefined
+              }
+              actionTitle={filter === "all" ? "İlk Talebimi Oluştur" : undefined}
+              onAction={filter === "all" ? () => router.push("/(app)/request/location") : undefined}
             />
           }
         />

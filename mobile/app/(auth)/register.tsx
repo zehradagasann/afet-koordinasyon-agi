@@ -17,23 +17,21 @@ import { registerSchema, type RegisterFormData } from "@/src/lib/validations";
 export default function RegisterScreen() {
   const registerMutation = useRegister();
 
+  const confirmSchema = registerSchema
+    .and(z.object({ confirmPassword: z.string() }))
+    .refine((d) => d.password === d.confirmPassword, {
+      message: "Şifreler eşleşmiyor",
+      path: ["confirmPassword"],
+    });
+
+  type FormData = z.infer<typeof confirmSchema>;
+
   const {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterFormData & { confirmPassword?: string }>({
-    resolver: zodResolver(
-      registerSchema
-        .and(
-          z.object({
-            confirmPassword: z.string(),
-          })
-        )
-        .refine((d) => d.password === d.confirmPassword, {
-          message: "Şifreler eşleşmiyor",
-          path: ["confirmPassword"],
-        })
-    ),
+  } = useForm<FormData>({
+    resolver: zodResolver(confirmSchema),
     defaultValues: {
       first_name: "",
       last_name: "",
@@ -47,8 +45,9 @@ export default function RegisterScreen() {
     },
   });
 
-  const onSubmit = (data: RegisterFormData) => {
-    registerMutation.mutate(data);
+  const onSubmit = (data: FormData) => {
+    const { confirmPassword: _cp, ...rest } = data;
+    registerMutation.mutate({ ...rest, role: "citizen" });
   };
 
   return (

@@ -1,9 +1,9 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import {
   Pressable,
-  SafeAreaView,
   Text,
   TextInput,
   View,
@@ -20,7 +20,7 @@ const schema = z.object({
     if (!result.success) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: result.error.errors[0].message,
+        message: result.error.issues[0].message,
       });
     }
   }),

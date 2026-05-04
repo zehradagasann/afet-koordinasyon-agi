@@ -1,9 +1,9 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as LocationLib from "expo-location";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  SafeAreaView,
   ScrollView,
   Text,
   View,

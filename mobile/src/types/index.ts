@@ -74,11 +74,11 @@ export type NeedType =
   | "other";
 
 export type RequestStatus =
-  | "pending"
-  | "active"
-  | "assigned"
-  | "resolved"
-  | "cancelled";
+  | "pending"    // Beklemede
+  | "active"     // Aktif — ekip yolda
+  | "assigned"   // Atandı — araç görevlendirildi
+  | "resolved"   // Çözüldü
+  | "cancelled"; // İptal edildi
 
 export interface DisasterRequest {
   id: string;

@@ -63,17 +63,54 @@ export function NeedBadge({ type }: NeedBadgeProps) {
   );
 }
 
-/** Utility: get Turkish label for a need type */
-export function getNeedLabel(type: NeedType): string {
-  return NEED_CONFIG[type]?.label ?? type;
+// Backend mock verisi Türkçe anahtarlar kullandığından cluster ekranında
+// bilinmeyen tür geldiğinde okunabilir etiket göstermek için yedek eşleme.
+const BACKEND_LABEL_MAP: Record<string, string> = {
+  enkaz:          "Enkaz",
+  yangin:         "Yangın",
+  medikal:        "Tıbbi Yardım",
+  gida:           "Gıda",
+  barinma:        "Barınak",
+  su:             "Su",
+  is_makinesi:    "İş Makinesi",
+  arama_kurtarma: "Arama Kurtarma",
+  ulasim:         "Ulaşım",
+};
+
+/** Utility: get Turkish label for a need type (handles both frontend and backend keys) */
+export function getNeedLabel(type: NeedType | string): string {
+  return NEED_CONFIG[type as NeedType]?.label ?? BACKEND_LABEL_MAP[type] ?? type;
 }
 
 /** Utility: get emoji icon for a need type */
-export function getNeedIcon(type: NeedType): string {
-  return NEED_CONFIG[type]?.icon ?? "📦";
+export function getNeedIcon(type: NeedType | string): string {
+  return NEED_CONFIG[type as NeedType]?.icon ?? "📦";
 }
 
 /** Utility: get Turkish label for a request status */
 export function getStatusLabel(status: RequestStatus): string {
   return STATUS_CONFIG[status]?.label ?? status;
+}
+
+// ─── Cluster Status Badge ──────────────────────────────────────────────────
+
+type ClusterStatus = "active" | "resolved" | "en_route";
+
+const CLUSTER_STATUS_CONFIG: Record<ClusterStatus, { label: string; bg: string; text: string }> = {
+  active:   { label: "Aktif",   bg: "bg-status-active/20",  text: "text-status-active" },
+  en_route: { label: "Yolda",   bg: "bg-status-info/20",    text: "text-status-info" },
+  resolved: { label: "Çözüldü", bg: "bg-surface-muted",     text: "text-text-muted" },
+};
+
+interface ClusterStatusBadgeProps {
+  status: ClusterStatus | string;
+}
+
+export function ClusterStatusBadge({ status }: ClusterStatusBadgeProps) {
+  const cfg = CLUSTER_STATUS_CONFIG[status as ClusterStatus] ?? CLUSTER_STATUS_CONFIG.active;
+  return (
+    <View className={`rounded-full px-2.5 py-1 ${cfg.bg}`}>
+      <Text className={`text-xs font-semibold ${cfg.text}`}>{cfg.label}</Text>
+    </View>
+  );
 }

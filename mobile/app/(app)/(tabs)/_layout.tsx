@@ -15,6 +15,7 @@ export default function AppTabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: "#E63946",
         tabBarInactiveTintColor: "#9CA3AF",
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           height: 66,
           paddingBottom: 8,

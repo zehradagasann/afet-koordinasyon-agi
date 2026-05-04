@@ -18,6 +18,7 @@ export { Card, PressableCard } from "./Card";
 export {
   StatusBadge,
   NeedBadge,
+  ClusterStatusBadge,
   getNeedLabel,
   getNeedIcon,
   getStatusLabel,

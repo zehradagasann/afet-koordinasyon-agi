@@ -134,12 +134,12 @@ type AlertBannerVariant = "error" | "warning" | "info" | "success";
 
 const ALERT_VARIANTS: Record<
   AlertBannerVariant,
-  { bg: string; icon: string; textColor: string }
+  { bg: string; icon: string; textColor: string; border: string }
 > = {
-  error:   { bg: "bg-status-urgent/10", icon: "⚠️", textColor: "text-status-urgent" },
-  warning: { bg: "bg-status-pending/10", icon: "⚡", textColor: "text-status-pending" },
-  info:    { bg: "bg-status-info/10",    icon: "ℹ️", textColor: "text-status-info" },
-  success: { bg: "bg-status-active/10",  icon: "✅", textColor: "text-status-active" },
+  error:   { bg: "bg-status-urgent/10",  icon: "⚠️", textColor: "text-status-urgent",  border: "border-status-urgent/40" },
+  warning: { bg: "bg-status-pending/10", icon: "⚡", textColor: "text-status-pending", border: "border-transparent" },
+  info:    { bg: "bg-status-info/10",    icon: "ℹ️", textColor: "text-status-info",    border: "border-transparent" },
+  success: { bg: "bg-status-active/10",  icon: "✅", textColor: "text-status-active",  border: "border-transparent" },
 };
 
 interface AlertBannerProps {
@@ -158,7 +158,7 @@ export function AlertBanner({
 }: AlertBannerProps) {
   const v = ALERT_VARIANTS[variant];
   return (
-    <View className={`${v.bg} border border-${variant === "error" ? "status-urgent/40" : "transparent"} rounded-card p-3 mb-4`}>
+    <View className={`${v.bg} border ${v.border} rounded-card p-3 mb-4`}>
       <Text className={`${v.textColor} font-semibold text-sm`}>
         {v.icon} {title}
       </Text>

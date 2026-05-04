@@ -8,9 +8,11 @@ import enum
 
 
 class RequestStatus(str, enum.Enum):
-    pending = "pending"
-    assigned = "assigned"
-    resolved = "resolved"
+    pending   = "pending"    # Beklemede — ekip henüz müdahale etmedi
+    active    = "active"     # Aktif — ekip olay yerine gidiyor
+    assigned  = "assigned"   # Atandı — araç/ekip göreve atandı
+    resolved  = "resolved"   # Çözüldü — müdahale tamamlandı
+    cancelled = "cancelled"  # İptal — kullanıcı tarafından iptal edildi
 
 
 class ClusterStatus(str, enum.Enum):

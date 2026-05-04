@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from uuid import UUID
 from models import RequestStatus, ClusterStatus
@@ -14,10 +14,12 @@ class RequestCreate(BaseModel):
 
 class RequestResponse(RequestCreate):
     id: UUID
+    # created_by_user_id → user_id: mobil tip ile uyumlu alias
+    user_id: UUID | None = Field(None, validation_alias="created_by_user_id")
     status: RequestStatus
     created_at: datetime
     is_verified: bool
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class PrioritizedRequestResponse(RequestResponse):

@@ -1,4 +1,5 @@
-import { SafeAreaView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, View } from "react-native";
 import { Button, Card, ScreenHeader } from "@/src/components/ui";
 import { useLogout } from "@/src/hooks/useAuth";
 import { useAuthStore } from "@/src/stores/authStore";

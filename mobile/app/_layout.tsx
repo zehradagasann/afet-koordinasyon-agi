@@ -3,6 +3,7 @@ import { Slot, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import "../global.css";
 import { queryClient } from "@/src/lib/queryClient";
 import { authService } from "@/src/services/authService";
@@ -18,25 +19,23 @@ function AuthGate() {
     let mounted = true;
 
     const bootstrap = async () => {
-      try {
-        const token = await authService.getStoredToken();
-        if (!token) {
-          if (mounted) logout();
-          return;
-        }
-        // Persisted user varsa anında authentication; arkada doğrulayalım
+      const token = await authService.getStoredToken();
+      if (!token) {
+        if (mounted) logout();
+      }
+      // Token kontrolü bitti; persist'ten gelen state ile hemen render et
+      if (mounted) {
+        setLoading(false);
+        setBootstrapping(false);
+      }
+      // Arka planda token'ı doğrula (UI bloklamaz)
+      if (token) {
         try {
           const fresh = await authService.getMe();
           if (mounted) setUser(fresh);
         } catch {
-          // Token geçersiz / network yok
           await authService.logout();
           if (mounted) logout();
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-          setBootstrapping(false);
         }
       }
     };
@@ -72,9 +71,11 @@ function AuthGate() {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthGate />
-      <StatusBar style="dark" />
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthGate />
+        <StatusBar style="dark" />
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

@@ -11,14 +11,19 @@ export const requestKeys = {
 
 // ─── useRequests ───────────────────────────────────────────────────────────
 
-/**
- * Fetch all user requests (sorted by backend priority).
- * Returns TanStack Query result with auto-caching.
- */
+/** Tüm talepleri öncelik sırasına göre getirir (personel paneli). */
 export function useRequests() {
   return useQuery({
     queryKey: requestKeys.all,
     queryFn: requestService.getAll,
+  });
+}
+
+/** Giriş yapan kullanıcıya ait talepleri getirir (vatandaş paneli). */
+export function useMyRequests() {
+  return useQuery({
+    queryKey: [...requestKeys.all, "mine"] as const,
+    queryFn: requestService.getMyRequests,
   });
 }
 

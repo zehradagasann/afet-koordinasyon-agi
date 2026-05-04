@@ -1,7 +1,7 @@
 import { ScrollView, Text, View, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Button, Card, ScreenHeader, StatusBadge } from "@/src/components/ui";
-import { getNeedLabel } from "@/src/components/ui/Badge";
+import { Button, Card, ScreenHeader } from "@/src/components/ui";
+import { ClusterStatusBadge, getNeedLabel } from "@/src/components/ui/Badge";
 import { useAuthStore } from "@/src/stores/authStore";
 import { useOverrideAlerts, useClusters, useExecuteOverride, useCompleteMission } from "@/src/hooks/useClusters";
 import { useVehicles } from "@/src/hooks/useVehicles";
@@ -25,14 +25,14 @@ export default function TasksScreen() {
   const handleExecuteOverride = (vehicleId: string, newClusterId: string) => {
     executeOverride.mutate({ vehicleId, newClusterId }, {
       onSuccess: () => Alert.alert("Başarılı", "Rota başarıyla güncellendi"),
-      onError: (err: any) => Alert.alert("Hata", err.message || "Rota güncellenemedi"),
+      onError: (err: Error) => Alert.alert("Hata", err.message || "Rota güncellenemedi"),
     });
   };
 
   const handleCompleteMission = (clusterId: string) => {
     completeMission.mutate(clusterId, {
       onSuccess: () => Alert.alert("Başarılı", "Görev tamamlandı olarak işaretlendi"),
-      onError: (err: any) => Alert.alert("Hata", err.message || "Görev tamamlanamadı"),
+      onError: (err: Error) => Alert.alert("Hata", err.message || "Görev tamamlanamadı"),
     });
   };
 
@@ -82,13 +82,13 @@ export default function TasksScreen() {
                     <Text className="text-status-urgent font-bold text-base flex-1">
                       {currentCluster.cluster_name}
                     </Text>
-                    <StatusBadge status={currentCluster.status} />
+                    <ClusterStatusBadge status={currentCluster.status} />
                   </View>
                   
                   <View className="flex-row gap-2 mb-2">
                     <Text className="text-text-muted text-sm w-20">İhtiyaç:</Text>
                     <Text className="text-text-primary font-medium text-sm">
-                      {getNeedLabel(currentCluster.need_type as any)}
+                      {getNeedLabel(currentCluster.need_type)}
                     </Text>
                   </View>
 

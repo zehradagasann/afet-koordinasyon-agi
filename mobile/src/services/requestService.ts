@@ -23,6 +23,12 @@ export const requestService = {
     return response.data;
   },
 
+  /** Giriş yapan kullanıcıya ait talepleri döndürür (GET /api/ihbarlar/mine). */
+  async getMyRequests(): Promise<DisasterRequest[]> {
+    const response = await api.get<DisasterRequest[]>(`${BASE}/mine`);
+    return response.data;
+  },
+
   /**
    * Backend `GET /api/ihbarlar` yok; `prioritized` endpoint'inden tum
    * talepleri cekiyoruz. Bu listede dynamic_priority_score var ama
