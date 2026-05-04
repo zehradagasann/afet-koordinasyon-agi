@@ -33,7 +33,7 @@ jobs:
 
       - name: Build APK
         working-directory: mobile
-        run: eas build --platform android --profile ${{ github.event.inputs.profile }} --non-interactive
+        run: eas build --platform android --profile ${{ github.event.inputs.profile }} --non-interactive --clear-cache
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_API_URL: ${{ secrets.BACKEND_URL }}
