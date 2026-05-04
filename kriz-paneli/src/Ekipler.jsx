@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { apiFetch } from './services/apiFetch';
 
 const VEHICLE_ICONS = {
   ambulans: 'medical_services',
@@ -112,7 +113,7 @@ export default function Ekipler() {
 
   const fetchAraclar = async () => {
     try {
-      const r = await fetch('/araclar');
+      const r = await apiFetch('/araclar');
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
       setAraclar(data);
@@ -164,9 +165,8 @@ export default function Ekipler() {
     }
     setKaydediliyor(true);
     try {
-      const r = await fetch('/arac-ekle', {
+      const r = await apiFetch('/arac-ekle', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           plate_number: plateNumber,
           latitude: parseFloat(yeniArac.latitude),

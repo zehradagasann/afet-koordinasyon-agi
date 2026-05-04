@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import OverrideAlertPanel from './OverrideAlertPanel';
 import { CLUSTER_STATUS } from '../constants/statuses';
+import { apiFetch } from '../services/apiFetch';
 
 const kirmiziPin = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -57,8 +58,8 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         const [reqRes, clusterRes] = await Promise.all([
-          fetch('http://127.0.0.1:8000/talepler/oncelikli'),
-          fetch('http://127.0.0.1:8000/requests/task-packages')
+          apiFetch('/talepler/oncelikli'),
+          apiFetch('/requests/task-packages')
         ]);
         
         if (!reqRes.ok) throw new Error(`HTTP ${reqRes.status}`);
@@ -109,7 +110,7 @@ export default function Dashboard() {
   
   const aracıAta = async (arac) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/requests/task-packages/${secilenGorev.cluster_id}/assign-vehicle?vehicle_id=${arac.vehicle_id}`, { method: 'POST' });
+      const res = await apiFetch(`/requests/task-packages/${secilenGorev.cluster_id}/assign-vehicle?vehicle_id=${arac.vehicle_id}`, { method: 'POST' });
       if (res.ok) {
         alert(`${arac.vehicle_type || 'Araç'} başarıyla görevlendirildi!`);
         setIsModalOpen(false);
@@ -223,7 +224,7 @@ export default function Dashboard() {
                       setIsModalOpen(true);
                       setAraclarLoading(true);
                       try {
-                        const res = await fetch(`http://127.0.0.1:8000/requests/task-packages/${cluster.cluster_id}/recommend-vehicles?top_n=3`);
+                        const res = await apiFetch(`/requests/task-packages/${cluster.cluster_id}/recommend-vehicles?top_n=3`);
                         if (res.ok) {
                           const data = await res.json();
                           setMusaitAraclar(data);

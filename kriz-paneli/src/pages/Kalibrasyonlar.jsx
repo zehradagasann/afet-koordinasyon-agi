@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiFetch } from '../services/apiFetch';
 
 const NEED_TYPES = [
   { value: 'arama_kurtarma', label: 'Arama Kurtarma', baseScore: 100 },
@@ -88,12 +89,9 @@ export default function Kalibrasyonlar() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        'http://127.0.0.1:8000/requests/task-packages/priority-simulate',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+      const res = await apiFetch('/requests/task-packages/priority-simulate', {
+        method: 'POST',
+        body: JSON.stringify({
             need_type: scenario.need_type,
             wait_hours: parseFloat(scenario.wait_hours) || 0,
             temperature_celsius:
@@ -109,8 +107,7 @@ export default function Kalibrasyonlar() {
             is_raining: !!scenario.is_raining,
             is_night: !!scenario.is_night,
           }),
-        }
-      );
+      });
 
       if (res.ok) {
         const data = await res.json();

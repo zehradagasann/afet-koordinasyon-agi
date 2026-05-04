@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '../services/apiFetch';
 
 const NEED_TYPE_LABELS = {
   arama_kurtarma: 'Arama Kurtarma',
@@ -22,9 +23,7 @@ export default function OverrideAlertPanel({ onOverrideExecuted, onLocate }) {
 
   const fetchOverrides = useCallback(async () => {
     try {
-      const res = await fetch(
-        'http://127.0.0.1:8000/requests/task-packages/override-alerts'
-      );
+      const res = await apiFetch('/requests/task-packages/override-alerts');
       if (res.ok) {
         const data = await res.json();
         setOverrides(Array.isArray(data) ? data : []);
@@ -51,17 +50,13 @@ export default function OverrideAlertPanel({ onOverrideExecuted, onLocate }) {
     setExecuting(key);
     setFeedback(null);
     try {
-      const res = await fetch(
-        'http://127.0.0.1:8000/requests/task-packages/execute-override',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            vehicle_id: override.vehicle_id,
-            new_cluster_id: override.new_cluster_id,
-          }),
-        }
-      );
+      const res = await apiFetch('/requests/task-packages/execute-override', {
+        method: 'POST',
+        body: JSON.stringify({
+          vehicle_id: override.vehicle_id,
+          new_cluster_id: override.new_cluster_id,
+        }),
+      });
 
       if (res.ok) {
         const data = await res.json();

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from './services/apiFetch';
 
 const NEED_LABELS = {
   arama_kurtarma: 'Arama Kurtarma', medikal: 'Medikal', yangin: 'Yangın',
@@ -22,10 +23,9 @@ export default function DogrulanmamisIhbarlar() {
 
   const fetchIhbarlar = async () => {
     try {
-      const r = await fetch('/requests/prioritized');
+      const r = await apiFetch('/requests/prioritized');
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
-      // Sadece doğrulanmamışları al
       setIhbarlar(data.filter(i => !i.is_verified));
       setError(null);
     } catch (e) {
@@ -37,17 +37,12 @@ export default function DogrulanmamisIhbarlar() {
 
   useEffect(() => { fetchIhbarlar(); }, []);
 
-  const handleDurum = async (id, yeniDurum) => {
+  const _islem = async (id, endpoint) => {
     setIslemler(p => ({ ...p, [id]: 'loading' }));
     try {
-      const r = await fetch(`/requests/${id}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: yeniDurum }),
-      });
+      const r = await apiFetch(endpoint, { method: 'POST' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setIslemler(p => ({ ...p, [id]: 'done' }));
-      // Listeden kaldır
       setTimeout(() => {
         setIhbarlar(p => p.filter(i => i.id !== id));
         setIslemler(p => { const n = { ...p }; delete n[id]; return n; });
@@ -57,6 +52,9 @@ export default function DogrulanmamisIhbarlar() {
       setTimeout(() => setIslemler(p => { const n = { ...p }; delete n[id]; return n; }), 2000);
     }
   };
+
+  const handleDogrula = (id) => _islem(id, `/requests/${id}/dogrula`);
+  const handleReddet  = (id) => _islem(id, `/requests/${id}/reddet`);
 
   const gorunenler = filtre === 'kritik'
     ? ihbarlar.filter(i => i.dynamic_priority_score >= 80)
@@ -177,13 +175,13 @@ export default function DogrulanmamisIhbarlar() {
                   ) : (
                     <>
                       <button
-                        onClick={() => handleDurum(ihbar.id, 'assigned')}
+                        onClick={() => handleDogrula(ihbar.id)}
                         className="flex-1 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all"
                       >
                         <span className="material-symbols-outlined text-lg">check_circle</span> Doğrula
                       </button>
                       <button
-                        onClick={() => handleDurum(ihbar.id, 'resolved')}
+                        onClick={() => handleReddet(ihbar.id)}
                         className="flex-1 py-2.5 bg-surface-container-high hover:bg-red-500/10 hover:text-red-500 text-slate-300 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all border border-slate-700/30"
                       >
                         <span className="material-symbols-outlined text-lg">cancel</span> Reddet

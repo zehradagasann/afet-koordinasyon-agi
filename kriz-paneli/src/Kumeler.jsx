@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from './services/apiFetch';
 
 const PRIORITY_COLORS = {
   'Kritik': { border: 'border-red-500/30', bg: 'bg-red-500/10', badge: 'bg-red-600 text-white', text: 'text-red-500', btn: 'bg-blue-600 hover:bg-blue-700' },
@@ -25,7 +26,7 @@ export default function Kumeler() {
 
   const fetchKumeler = useCallback(async () => {
     try {
-      const r = await fetch('/requests/task-packages?status=active');
+      const r = await apiFetch('/requests/task-packages?status=active');
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
       setKumeler(data);
@@ -44,7 +45,7 @@ export default function Kumeler() {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const r = await fetch('/requests/task-packages/generate', { method: 'POST' });
+      const r = await apiFetch('/requests/task-packages/generate', { method: 'POST' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
       setKumeler(data);
@@ -61,7 +62,7 @@ export default function Kumeler() {
   const handleYonlendir = async (kume) => {
     // Araç listesini çek, modal aç
     try {
-      const r = await fetch('/araclar');
+      const r = await apiFetch('/araclar');
       const data = await r.json();
       setAraclar(data);
     } catch {
@@ -75,7 +76,7 @@ export default function Kumeler() {
     if (!seciliAracId || !modal) return;
     setAtaniyor(true);
     try {
-      const r = await fetch(`/requests/task-packages/${modal.kume.cluster_id}/assign-vehicle?vehicle_id=${seciliAracId}`, {
+      const r = await apiFetch(`/requests/task-packages/${modal.kume.cluster_id}/assign-vehicle?vehicle_id=${seciliAracId}`, {
         method: 'POST',
       });
       if (!r.ok) {
