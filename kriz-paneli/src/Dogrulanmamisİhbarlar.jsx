@@ -37,33 +37,39 @@ export default function DogrulanmamisIhbarlar() {
 
   useEffect(() => { fetchIhbarlar(); }, []);
 
- const _islem = async (id, endpoint) => {
+  const _islem = async (id, endpoint) => {
     setIslemler(p => ({ ...p, [id]: 'loading' }));
+    
     try {
-      // apiFetch yerine doğrudan fetch kullanarak adresi garantiye alıyoruz
-      const r = await fetch(`http://localhost:8000${endpoint}`, { 
+      const BACKEND_URL = "https://afet-koordinasyon-agi.onrender.com"; 
+      
+      // DÜZELTME: `${https://...}` kullanımı hatalıydı. Değişkeni kullandık.
+      const r = await fetch(`${BACKEND_URL}${endpoint}`, { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         }
       });
 
-      if (!r.ok) throw new Error(`HTTP Hatası: ${r.status}`);
+      if (!r.ok) {
+        throw new Error(`Sunucu Hatası: ${r.status}`);
+      }
       
       setIslemler(p => ({ ...p, [id]: 'done' }));
-      
-      // Başarılı işlemden sonra kartı listeden kaldır
       setTimeout(() => {
         setIhbarlar(p => p.filter(i => i.id !== id));
         setIslemler(p => { const n = { ...p }; delete n[id]; return n; });
       }, 800);
 
     } catch (e) {
-      console.error("Buton işlemi başarısız:", e);
-      setIslemler(p => ({ ...p, [id]: 'error' }));
+      // Hatayı tarayıcı konsoluna yazdırıyoruz ki F12'ye basıp tam sebebini görebilesin
+      console.error("Buton işlemi başarısız oldu. Detay:", e); 
+      
+      // Ekranda "Hata oluştu" yazdıran komut budur
+      setIslemler(p => ({ ...p, [id]: 'error' })); 
       setTimeout(() => setIslemler(p => { const n = { ...p }; delete n[id]; return n; }), 2000);
-    }
-  };
+    } // DÜZELTME: catch bloğu için eksik olan '}' eklendi
+  }; // DÜZELTME: _islem fonksiyonu için eksik olan '};' eklendi
 
   const handleDogrula = (id) => _islem(id, `/requests/${id}/dogrula`);
   const handleReddet  = (id) => _islem(id, `/requests/${id}/reddet`);
