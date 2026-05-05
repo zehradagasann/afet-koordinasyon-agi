@@ -1,16 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 
+// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  
+  plugins: [react()],
   server: {
     proxy: {
       '/auth': {
-        target: 'http://127.0.0.1:8000', // localhost yerine 127.0.0.1 kullandık
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
-        // EĞER PYTHON TARAFINDA ADRES SADECE "/login" İSE ŞU SATIRIN BAŞINDAKİ // İŞARETLERİNİ KALDIR:
+        // Eğer backend'de adres direkt "/login" ise alttaki satırı aktif etmelisin:
         // rewrite: (path) => path.replace(/^\/auth/, '')
       },
       '/talepler': {
@@ -38,10 +37,6 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/assign-vehicle': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/buyuk-depremler': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       }

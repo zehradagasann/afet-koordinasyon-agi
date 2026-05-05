@@ -37,17 +37,29 @@ export default function DogrulanmamisIhbarlar() {
 
   useEffect(() => { fetchIhbarlar(); }, []);
 
-  const _islem = async (id, endpoint) => {
+ const _islem = async (id, endpoint) => {
     setIslemler(p => ({ ...p, [id]: 'loading' }));
     try {
-      const r = await apiFetch(endpoint, { method: 'POST' });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      // apiFetch yerine doğrudan fetch kullanarak adresi garantiye alıyoruz
+      const r = await fetch(`http://localhost:8000${endpoint}`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!r.ok) throw new Error(`HTTP Hatası: ${r.status}`);
+      
       setIslemler(p => ({ ...p, [id]: 'done' }));
+      
+      // Başarılı işlemden sonra kartı listeden kaldır
       setTimeout(() => {
         setIhbarlar(p => p.filter(i => i.id !== id));
         setIslemler(p => { const n = { ...p }; delete n[id]; return n; });
       }, 800);
+
     } catch (e) {
+      console.error("Buton işlemi başarısız:", e);
       setIslemler(p => ({ ...p, [id]: 'error' }));
       setTimeout(() => setIslemler(p => { const n = { ...p }; delete n[id]; return n; }), 2000);
     }
