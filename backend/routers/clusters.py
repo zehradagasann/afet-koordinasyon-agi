@@ -8,6 +8,7 @@ import schemas
 from models import Cluster, ClusterStatus, ReliefVehicle
 from constants import VehicleStatus
 from core.dependencies import get_db, require_coordinator
+import models as _models
 from services.clustering import run_clustering
 from services.vehicle_recommendation import recommend_vehicles, NEED_TO_STOCK_FIELD
 from services.override_detector import detect_override_opportunities
@@ -327,7 +328,8 @@ def recommend_vehicles_for_cluster(
 def assign_vehicle_to_cluster(
     cluster_id: UUID,
     vehicle_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: _models.User = Depends(require_coordinator),
 ):
     """
     Bir aracı kümeye atar ve aracı 'yolda' durumuna geçirir.

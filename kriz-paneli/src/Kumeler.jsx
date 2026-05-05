@@ -63,10 +63,13 @@ export default function Kumeler() {
     // Araç listesini çek, modal aç
     try {
       const r = await apiFetch('/api/vehicles');
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
       setAraclar(data);
-    } catch {
+    } catch (e) {
       setAraclar([]);
+      setBildirim({ type: 'error', msg: `Araç listesi yüklenemedi: ${e.message}` });
+      setTimeout(() => setBildirim(null), 4000);
     }
     setSeciliAracId('');
     setModal({ kume });
@@ -203,7 +206,7 @@ export default function Kumeler() {
           )}
           {kumeler.map((kume) => {
             const c = PRIORITY_COLORS[kume.priority_level] || PRIORITY_COLORS['Düşük'];
-            const adres = kume.location?.full_address || kume.location?.district || `${kume.center_latitude?.toFixed(3)}, ${kume.center_longitude?.toFixed(3)}`;
+            const adres = kume.full_address || kume.district || (kume.center_latitude != null ? `${kume.center_latitude.toFixed(3)}, ${kume.center_longitude.toFixed(3)}` : 'Konum bilinmiyor');
             return (
               <div key={kume.cluster_id} className={`bg-slate-800 border ${c.border} rounded-xl overflow-hidden shadow-sm`}>
                 <div className={`${c.bg} p-4 border-b ${c.border} flex justify-between items-center`}>

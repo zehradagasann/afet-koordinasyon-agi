@@ -144,12 +144,7 @@ export default function Dashboard() {
   }, []);
 
   
- const aracıAta = async (arac) => {
-  try {
-    // KRİTİK DÜZELTME: Vercel'deyken localhost çalışmaz. 
-    // Buraya backend'inizin yüklü olduğu gerçek URL'i yazmalısınız.
-    // Örnek: https://api-resq.onrender.com/assign-vehicle
-    const BACKEND_URL = "https://BACKEND_ADRESINIZ.com"; 
+
 
     const r = await fetch(`${BACKEND_URL}/assign-vehicle`, { 
       method: 'POST',
@@ -168,13 +163,13 @@ export default function Dashboard() {
 
     setIsModalOpen(false);
     alert("Ekip başarıyla yönlendirildi!");
-    
-  } catch (e) {
+    try{
+     } catch (e) {
     console.error("Hata:", e);
     alert("Hata: " + e.message);
   }
 };
-  
+    
   const verified = ihbarlar.filter(i => i.is_verified).length;
   const normalIhbarlar = ihbarlar.filter(i => i.dynamic_priority_score < 80);
 
@@ -411,4 +406,4 @@ export default function Dashboard() {
 
     </div>
   );
-}
+

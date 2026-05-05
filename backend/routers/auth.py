@@ -13,19 +13,12 @@ except ImportError:
 
 import models
 import schemas
-from core.dependencies import get_db
+from core.dependencies import get_db, SECRET_KEY, ALGORITHM, oauth2_scheme
 from services.anomaly_detection import guard_against_tc_rotation
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
-# JWT ayarları
-
-# JWT ayarları
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
-ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 gün
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 def verify_password(plain_password, hashed_password):

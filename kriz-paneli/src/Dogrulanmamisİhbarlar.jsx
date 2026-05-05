@@ -23,7 +23,7 @@ export default function DogrulanmamisIhbarlar() {
 
   const fetchIhbarlar = async () => {
     try {
-      const r = await apiFetch('/requests/prioritized');
+      const r = await apiFetch('/api/ihbarlar/prioritized');
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
       setIhbarlar(data.filter(i => !i.is_verified));
@@ -71,8 +71,8 @@ export default function DogrulanmamisIhbarlar() {
     } // DÜZELTME: catch bloğu için eksik olan '}' eklendi
   }; // DÜZELTME: _islem fonksiyonu için eksik olan '};' eklendi
 
-  const handleDogrula = (id) => _islem(id, `/requests/${id}/dogrula`);
-  const handleReddet  = (id) => _islem(id, `/requests/${id}/reddet`);
+  const handleDogrula = (id) => _islem(id, `/api/ihbarlar/${id}/dogrula`);
+  const handleReddet  = (id) => _islem(id, `/api/ihbarlar/${id}/reddet`);
 
   const gorunenler = filtre === 'kritik'
     ? ihbarlar.filter(i => i.dynamic_priority_score >= 80)

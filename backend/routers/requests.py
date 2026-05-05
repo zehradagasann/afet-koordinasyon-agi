@@ -99,6 +99,7 @@ def update_status(
 def get_dogrulanmamis_ihbarlar(
     oncelik: str = Query(None),
     db: Session = Depends(get_db),
+    _: models.User = Depends(require_coordinator),
 ):
     """Doğrulanmamış ihbarları listeler. Koordinatör paneli için."""
     query = db.query(models.DisasterRequest).filter(
