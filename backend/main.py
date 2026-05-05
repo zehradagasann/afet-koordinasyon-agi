@@ -204,6 +204,36 @@ def create_request_legacy(
 ):
     return _create_request_sync(request_data, db, client_ip=request.client.host)
 
+@app.post(
+    "/requests/{request_id}/dogrula",
+    tags=["İhbar Yönetimi"],
+    summary="İhbarı Doğrula",
+    description="Şüpheli (is_verified=False) bir ihbarı operatör onayıyla doğrulanmış (is_verified=True) olarak işaretler."
+)
+def dogrula_ihbar(request_id: str, db: Session = Depends(get_db)):
+    req = db.query(models.DisasterRequest).filter(models.DisasterRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="İhbar bulunamadı")
+    
+    req.is_verified = True
+    db.commit()
+    return {"message": "İhbar başarıyla doğrulandı", "id": request_id}
+
+
+@app.post(
+    "/requests/{request_id}/reddet",
+    tags=["İhbar Yönetimi"],
+    summary="İhbarı Reddet",
+    description="Asılsız olduğu tespit edilen bir ihbarı sistemden (veritabanından) siler."
+)
+def reddet_ihbar(request_id: str, db: Session = Depends(get_db)):
+    req = db.query(models.DisasterRequest).filter(models.DisasterRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="İhbar bulunamadı")
+    
+    db.delete(req)
+    db.commit()
+    return {"message": "İhbar reddedildi ve silindi", "id": request_id}
 
 @app.post(
     "/requests",
