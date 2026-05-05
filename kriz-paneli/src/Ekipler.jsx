@@ -163,14 +163,21 @@ export default function Ekipler() {
       setTimeout(() => setBildirim(null), 4000);
       return;
     }
+    const lat = parseFloat(yeniArac.latitude);
+    const lng = parseFloat(yeniArac.longitude);
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      setBildirim({ type: 'error', msg: 'Geçerli bir enlem/boylam giriniz.' });
+      setTimeout(() => setBildirim(null), 4000);
+      return;
+    }
     setKaydediliyor(true);
     try {
       const r = await apiFetch('/api/vehicles/', {
         method: 'POST',
         body: JSON.stringify({
           plate_number: plateNumber,
-          latitude: parseFloat(yeniArac.latitude),
-          longitude: parseFloat(yeniArac.longitude),
+          latitude: lat,
+          longitude: lng,
           vehicle_type: vehicleType,
           capacity,
           base_speed_kmh: Number.parseInt(yeniArac.base_speed_kmh || '60', 10),
@@ -362,7 +369,7 @@ export default function Ekipler() {
               />
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Standart Hız (km/s)</label>
+              <label className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Standart Hız (km/h)</label>
               <input
                 type="number"
                 min="1"
@@ -459,7 +466,7 @@ export default function Ekipler() {
                       <h3 className="font-bold text-lg text-on-surface">{arac.plate_number || vehicleTypeLabel}</h3>
                       <p className="text-xs text-slate-400 capitalize">{vehicleTypeLabel}</p>
                       <span className="text-[10px] uppercase tracking-widest text-slate-500">
-                        Kapasite: {arac.capacity} · Hız: {arac.base_speed_kmh ?? 60} km/s
+                        Kapasite: {arac.capacity} · Hız: {arac.base_speed_kmh ?? 60} km/h
                       </span>
                     </div>
                   </div>

@@ -152,8 +152,9 @@ export default function Dashboard() {
         setAtamaFeedback({ type: 'success', msg: `${arac.vehicle_type || 'Araç'} başarıyla görevlendirildi.` });
         fetchData();
       } else {
-        const data = await res.json();
-        setAtamaFeedback({ type: 'error', msg: `Hata: ${data.detail || 'Görevlendirilemedi'}` });
+        let detail = 'Görevlendirilemedi';
+        try { detail = (await res.json()).detail || detail; } catch { /* non-JSON response */ }
+        setAtamaFeedback({ type: 'error', msg: `Hata: ${detail}` });
       }
     } catch {
       setAtamaFeedback({ type: 'error', msg: 'Bağlantı hatası oluştu.' });

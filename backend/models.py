@@ -36,7 +36,7 @@ class DisasterRequest(Base):
     status = Column(Enum(RequestStatus), default=RequestStatus.pending, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
     is_verified = Column(Boolean, default=False)
-    photo_urls = Column(ARRAY(String), default=list, nullable=True)
+    photo_urls = Column(ARRAY(String), default=[], nullable=True)
     audio_url = Column(String, nullable=True)
 
     created_by_user_id = Column(UUID(as_uuid=True), ForeignKey('app_users.id'), nullable=True)
