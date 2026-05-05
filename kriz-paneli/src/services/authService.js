@@ -1,6 +1,5 @@
-// Authentication API servisleri
-
-const API_BASE_URL = '/auth'; // Vite proxy üzerinden backend'e gidecek
+const BACKEND_URL = 'http://127.0.0.1:8000/assign-vehicle'; 
+const API_BASE_URL = `${BACKEND_URL}/auth`;
 
 export const authService = {
   async login(credentials) {

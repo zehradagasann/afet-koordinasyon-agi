@@ -6,6 +6,7 @@ import OverrideAlertPanel from './OverrideAlertPanel';
 import { CLUSTER_STATUS } from '../constants/statuses';
 import { apiFetch } from '../services/apiFetch';
 
+
 const kirmiziPin = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -89,8 +90,8 @@ export default function Dashboard() {
     };
 
     const connectWS = () => {
-      const ws = new WebSocket(`${proto}://localhost:8000/ws`);
-      const ws = new WebSocket('ws://localhost:8000/ws');
+      const ws = new WebSocket(`ws://127.0.0.1:8000/ws`);
+      
       wsRef.current = ws;
 
       ws.onopen = () => stopPolling();
@@ -145,30 +146,32 @@ export default function Dashboard() {
 
   
 
-
-    const r = await fetch(`${BACKEND_URL}/assign-vehicle`, { 
+const araciAta = async (arac) => {
+  try {
+    const r = await fetch(`http://127.0.0.1:8000/assign-vehicle`, { 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        vehicle_id: arac.vehicle_id,
-        request_id: secilenGorev?.id,
-        override: true // "Araç yolda" hatasını aşmak için
-      })
+     body: JSON.stringify({
+  vehicle_id: arac.vehicle_id,
+  cluster_id: secilenGorev?.cluster_id, // <-- İŞTE TEK DEĞİŞEN YER BURASI
+  override: true 
+})
     });
 
     if (!r.ok) {
       const errorData = await r.json();
-      throw new Error(errorData.detail || "İşlem başarısız");
+      // JavaScript objeyi metne çevirebilsin diye JSON.stringify ekledik
+      throw new Error(JSON.stringify(errorData.detail || errorData));
     }
 
     setIsModalOpen(false);
-    alert("Ekip başarıyla yönlendirildi!");
-    try{
-     } catch (e) {
-    console.error("Hata:", e);
+    alert("Ekip başarıyla yönlendirildi! 🎉");
+  } catch (e) {
+    console.error("Tam Hata Detayı:", e);
     alert("Hata: " + e.message);
   }
 };
+
     
   const verified = ihbarlar.filter(i => i.is_verified).length;
   const normalIhbarlar = ihbarlar.filter(i => i.dynamic_priority_score < 80);
@@ -384,18 +387,18 @@ export default function Dashboard() {
                     <p className="font-bold text-sm text-slate-800 dark:text-slate-200">{arac.vehicle_type}</p>
                     <p className="text-[11px] text-slate-500 mt-1 leading-tight">{arac.recommendation_text}</p>
                   </div>
-                  <button 
-                    onClick={() => aracıAta(arac)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 px-4 rounded shrink-0"
-                  >
-                    Görevlendir
-                  </button>
+              <button 
+  onClick={() => araciAta(arac)}
+  className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1.5 px-4 rounded shrink-0"
+>
+  Görevlendir
+</button>
                 </div>
               ))}
             </div>
 
             <button 
-              onClick={() => setIsModalOpen(false)}
+             onClick={() => setIsModalOpen(false)}
               className="mt-6 w-full py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm font-bold rounded"
             >
               İptal Et Kapat
@@ -406,4 +409,5 @@ export default function Dashboard() {
 
     </div>
   );
+}
 
