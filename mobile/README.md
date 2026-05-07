@@ -1,50 +1,61 @@
-# Welcome to your Expo app 👋
+# RESQ — Mobil Uygulama
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Afet koordinasyon sisteminin React Native / Expo mobil istemcisi. Vatandaşların yardım talebi oluşturmasını, gönüllü ve koordinatörlerin sahayı takip etmesini sağlar.
 
-## Get started
+## Gereksinimler
 
-1. Install dependencies
+- Node.js 20+
+- Expo CLI (`npm install -g expo-cli`)
+- Android: Google Maps API key (`app.json` içinde mevcut)
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Kurulum ve Çalıştırma
 
 ```bash
-npm run reset-project
+cd mobile
+npm install
+npm run start          # Expo dev server
+npm run android        # Android emülatör
+npm run ios            # iOS simülatör
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+`.env` dosyası oluştur:
+```
+EXPO_PUBLIC_API_URL=http://<backend-ip>:8000
+```
 
-## Learn more
+## APK Build
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+eas build --platform android --profile preview
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Proje Yapısı
 
-## Join the community
+```
+mobile/
+├── app/                        # Expo Router ekranları
+│   ├── _layout.tsx             # Root layout (auth gate)
+│   ├── (auth)/                 # Giriş / Kayıt
+│   └── (app)/
+│       ├── (tabs)/             # Ana sekmeler (Ana Sayfa, Harita, Profil...)
+│       ├── request/            # Talep oluşturma akışı (4 adım)
+│       ├── requests/           # Talep listesi ve detay
+│       └── status/[id].tsx     # Talep takip ekranı
+├── src/
+│   ├── services/               # API çağrıları (axios)
+│   ├── hooks/                  # TanStack Query mutation/query sarmalayıcıları
+│   ├── stores/                 # Zustand state (auth, location, ui)
+│   ├── components/ui/          # Paylaşılan UI bileşenleri
+│   ├── types/                  # TypeScript tip tanımları
+│   └── lib/                    # QueryClient, validasyon şemaları
+└── assets/                     # İkonlar, splash screen
+```
 
-Join our community of developers creating universal apps.
+## Dokümantasyon
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Dosya | İçerik |
+|-------|--------|
+| `CLAUDE.md` | Geliştirici rehberi ve mimari kararlar |
+| `API_INTEGRATION.md` | Backend endpoint referansı |
+| `TECHNOLOGY_STACK.md` | Kullanılan kütüphaneler ve gerekçeleri |
+| `SCREENS_ARCHITECTURE.md` | Ekran listesi ve navigasyon akışı |

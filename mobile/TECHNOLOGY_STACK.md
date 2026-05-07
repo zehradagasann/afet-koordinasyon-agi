@@ -1,283 +1,78 @@
-# RESQ Mobile - Teknoloji Stack Dokümantı
+# Teknoloji Yığını
 
-**Proje Adı:** RESQ Mobil Uygulaması  
-**Platform:** iOS & Android (React Native + Expo)  
-**Başlangıç Tarihi:** 2026-05-01  
-**Son Güncelleme:** 2026-05-01
+## Çekirdek
 
----
+| Paket | Versiyon | Kullanım |
+|-------|----------|---------|
+| React Native | 0.81.5 | Mobil framework |
+| Expo SDK | ~54.0.33 | Native API köprüsü, build araçları |
+| Expo Router | ~6.0.23 | Dosya tabanlı navigasyon |
+| TypeScript | strict | Tip güvenliği |
 
-## 📱 Teknoloji Stack Özeti
+## State Yönetimi
 
-### Core Framework
-| Teknoloji | Versiyon | Amaç |
-|-----------|----------|------|
-| React Native | 0.73+ | Mobil uygulama framework'ü |
-| Expo SDK | 50+ | Hızlı geliştirme ve deployment |
-| TypeScript | 5.x | Tip güvenliği ve IDE desteği |
-| Node.js | 18+ | NPM package manager |
+| Paket | Kullanım |
+|-------|---------|
+| **Zustand** ^5.0.12 | Yerel UI state (auth, location, draft, offline queue) |
+| **TanStack Query** ^5.100.7 | Sunucu state, cache, refetch, mutation |
 
-### State Management & Data Fetching
-| Kütüphane | Versiyon | Amaç |
-|-----------|----------|------|
-| Zustand | 4.x | Global state management (küçük ve hızlı) |
-| TanStack Query | 4.x | Sunucu durumu yönetimi ve caching |
-| AsyncStorage | 1.x | Cihaz üzerinde veri depolama |
+Kural: API'dan gelen veri → TanStack Query. Uygulama içi durum → Zustand.
 
-### UI & Styling
-| Kütüphane | Versiyon | Amaç |
-|-----------|----------|------|
-| NativeWind | 2.x | Tailwind CSS for React Native |
-| Lucide React Native | 0.x | Icon set (200+ ikon) |
-| React Native Maps | 1.x | Harita görünümü ve coğrafi veriler |
+## Form ve Validasyon
 
-### Navigation
-| Kütüphane | Versiyon | Amaç |
-|-----------|----------|------|
-| React Navigation | 6.x | Multi-screen navigation |
-| React Navigation Native Stack | 6.x | Native stack navigator |
-| React Navigation Bottom Tabs | 6.x | Alt sekme navigasyonu |
+| Paket | Kullanım |
+|-------|---------|
+| react-hook-form ^7.74.0 | Form state yönetimi |
+| zod ^4.4.1 | Şema validasyonu |
+| @hookform/resolvers ^5.2.2 | Zod + RHF entegrasyonu |
 
-### Forms & Validation
-| Kütüphane | Versiyon | Amaç |
-|-----------|----------|------|
-| React Hook Form | 7.x | Form state yönetimi (hafif) |
-| Zod | 3.x | TypeScript-first şema validasyonu |
-| @hookform/resolvers | 3.x | Zod ile React Hook Form entegrasyonu |
+## Ağ ve API
 
-### API & Networking
-| Kütüphane | Versiyon | Amaç |
-|-----------|----------|------|
-| Axios | 1.x | HTTP client (interceptors desteği) |
-| Expo Image Picker | 14.x | Cihaz kütüphanesinden fotoğraf seçme |
-| Expo Location | 16.x | GPS ve konum servisleri |
+| Paket | Kullanım |
+|-------|---------|
+| axios ^1.15.2 | HTTP istemcisi, interceptor'larla JWT yönetimi |
+| @react-native-community/netinfo 11.4.1 | Bağlantı durumu (çevrimdışı mod) |
 
-### DevTools & Testing
-| Araç | Versiyon | Amaç |
-|------|----------|------|
-| ESLint | 8.x | Kod kalitesi kontrol |
-| Prettier | 3.x | Kod formatı |
-| Jest | 29.x | Unit testleri |
+## Depolama ve Güvenlik
 
----
+| Paket | Kullanım |
+|-------|---------|
+| expo-secure-store ~15.0.8 | JWT token (şifreli, Keychain/Keystore) |
+| @react-native-async-storage/async-storage 2.2.0 | Zustand persist (non-sensitive) |
 
-## 🗂️ Proje Dosya Yapısı
+## Cihaz Özellikleri
 
-```
-mobile/
-├── app/                              # Expo Router ile ekranlar
-│   ├── (auth)/                       # Auth ekranları (drawer dışı)
-│   │   ├── login.tsx
-│   │   ├── register.tsx
-│   │   └── _layout.tsx
-│   │
-│   ├── (app)/                        # Tab navigasyonu
-│   │   ├── (tabs)/                   # Bottom tab navigator
-│   │   │   ├── index.tsx             # Harita & Dashboard
-│   │   │   ├── reports.tsx           # İhbar Listesi
-│   │   │   ├── alerts.tsx            # Bildirimler & Uyarılar
-│   │   │   ├── profile.tsx           # Profil & Ayarlar
-│   │   │   └── _layout.tsx
-│   │   │
-│   │   ├── report/
-│   │   │   ├── [id].tsx              # İhbar Detayı
-│   │   │   ├── new.tsx               # Yeni İhbar Oluştur
-│   │   │   └── _layout.tsx
-│   │   │
-│   │   ├── location/
-│   │   │   ├── select.tsx            # Konum Seçimi
-│   │   │   └── _layout.tsx
-│   │   │
-│   │   ├── _layout.tsx               # App layout (auth guard)
-│   │
-│   ├── _layout.tsx                   # Root layout
-│
-├── src/
-│   ├── components/
-│   │   ├── ui/                       # Temel UI bileşenleri
-│   │   │   ├── Button.tsx
-│   │   │   ├── Input.tsx
-│   │   │   ├── Card.tsx
-│   │   │   ├── Badge.tsx
-│   │   │   └── LoadingSpinner.tsx
-│   │   │
-│   │   ├── map/                      # Harita bileşenleri
-│   │   │   ├── MapView.tsx
-│   │   │   ├── Marker.tsx
-│   │   │   └── ClusterMarker.tsx
-│   │   │
-│   │   ├── report/                   # İhbar bileşenleri
-│   │   │   ├── ReportForm.tsx
-│   │   │   ├── ReportCard.tsx
-│   │   │   ├── NeedsSelector.tsx
-│   │   │   └── PhotoUpload.tsx
-│   │   │
-│   │   ├── location/                 # Konum bileşenleri
-│   │   │   ├── LocationPicker.tsx
-│   │   │   ├── PersonCount.tsx
-│   │   │   └── ConfirmLocation.tsx
-│   │   │
-│   │   ├── auth/                     # Auth bileşenleri
-│   │   │   ├── LoginForm.tsx
-│   │   │   ├── RegisterForm.tsx
-│   │   │   └── RoleSelector.tsx
-│   │   │
-│   │   └── common/                   # Ortak bileşenler
-│   │       ├── Header.tsx
-│   │       ├── SafeAreaView.tsx
-│   │       └── ErrorBoundary.tsx
-│   │
-│   ├── stores/                       # Zustand stores
-│   │   ├── authStore.ts
-│   │   ├── reportStore.ts
-│   │   ├── locationStore.ts
-│   │   └── uiStore.ts
-│   │
-│   ├── services/                     # API servisleri
-│   │   ├── api.ts                    # Axios instance
-│   │   ├── authService.ts
-│   │   ├── reportService.ts
-│   │   ├── vehicleService.ts
-│   │   └── mapService.ts
-│   │
-│   ├── hooks/                        # Custom React hooks
-│   │   ├── useAuth.ts
-│   │   ├── useReports.ts
-│   │   ├── useLocation.ts
-│   │   ├── useClusters.ts
-│   │   └── useForm.ts
-│   │
-│   ├── lib/
-│   │   ├── validation.ts             # Zod şemaları
-│   │   ├── constants.ts              # Sabitler
-│   │   ├── colors.ts                 # Renk paleti
-│   │   ├── needs.ts                  # İhtiyaç tipleri
-│   │   └── geo.ts                    # Coğrafi fonksiyonlar
-│   │
-│   ├── types/
-│   │   ├── index.ts                  # Tüm TypeScript tipleri
-│   │   ├── api.ts                    # API yanıt tipleri
-│   │   └── domain.ts                 # Business logic tipleri
-│   │
-│   └── utils/
-│       ├── navigation.ts
-│       ├── storage.ts                # AsyncStorage wrapper
-│       ├── validation.ts
-│       └── formatting.ts
-│
-├── package.json
-├── tsconfig.json
-├── tailwind.config.js
-├── app.json                          # Expo app.json
-├── .env.example
-└── README.md
-```
+| Paket | Kullanım |
+|-------|---------|
+| expo-location ~19.0.8 | GPS konum alma |
+| expo-image-picker ~17.0.11 | Galeriden fotoğraf seçimi |
+| expo-av ~16.0.8 | Ses kaydı (sesli not) |
+| react-native-maps 1.20.1 | Harita (Google Maps / Apple Maps) |
+| expo-haptics ~15.0.8 | Titreşim geri bildirimi |
 
----
+## Stil
 
-## 🎯 Teknoloji Seçim Gerekçeleri
+| Paket | Kullanım |
+|-------|---------|
+| nativewind ^4.2.3 | Tailwind CSS sınıfları React Native'de |
+| tailwindcss ^3.4.17 | Altta çalışan CSS motoru |
 
-### Neden Expo?
-- ✅ Firebase entegrasyonu kolay
-- ✅ Hızlı geliştirme ve hot reload
-- ✅ Cihaz kütüphanelerine yüksek seviye API'ler
-- ✅ EAS Build ile kolayca iOS/Android derlemesi
-- ✅ Bare workflow'a upgrade edilebilir
+## Navigasyon
 
-### Neden Zustand?
-- ✅ Redux'tan çok daha küçük (2KB)
-- ✅ Doğrudan React state gibi kullanım
-- ✅ DevTools desteği
-- ✅ TypeScript çok iyi destekleniyor
-- ❌ Redux gerekli değil (sadece auth + UI state)
+Expo Router ile dosya tabanlı navigasyon. Grup klasörleri:
+- `(auth)` — giriş/kayıt, token yoksa yönlendirilir
+- `(app)/(tabs)` — alt sekme navigasyonu
+- `(app)/request/*` — talep oluşturma stack'i
 
-### Neden TanStack Query?
-- ✅ Sunucu verilerini otomatik cache ve sync eder
-- ✅ Otomatik background refetch
-- ✅ Offline desteği
-- ✅ Performans optimizasyonları
-- ✅ Backend'e minimum istek gönder
+## UI Bileşenleri
 
-### Neden Axios?
-- ✅ Interceptor'lar (auth token ekleme, error handling)
-- ✅ Request/Response transformasyon
-- ✅ Cancel token'lar (request iptal etme)
-- ✅ Daha hoş API (fetch'e kıyasla)
+`src/components/ui/` altında proje genelinde kullanılan bileşenler:
 
-### Neden React Hook Form + Zod?
-- ✅ Minimal re-render
-- ✅ Performant form handling
-- ✅ TypeScript native validation (Zod)
-- ✅ Otomatik form state yönetimi
-
-### Neden NativeWind?
-- ✅ Tailwind CSS bilenlere tanıdık
-- ✅ Utility-first approach
-- ✅ Responsive design desteği
-- ✅ Dark mode hazır
-
----
-
-## 🔌 Backend Entegrasyonu
-
-### FastAPI Backend Bağlantısı
-```
-Backend URL: http://localhost:8000  (dev)
-             https://api.resq.com   (prod)
-
-Authentication: JWT Token (Authorization: Bearer {token})
-Content-Type: application/json
-```
-
-### Örnek API Çağrıları
-```typescript
-// Axios instance ile otomatik auth header ekleme
-GET    /api/auth/login
-POST   /api/reports
-GET    /api/reports?cluster_id=xxx
-GET    /api/clusters/{id}/recommend-vehicles
-POST   /api/requests/{id}/assign-vehicle
-```
-
----
-
-## 📦 Build & Deployment
-
-### Development
-```bash
-npm run start      # Expo dev server
-npm run android    # Android emülatör
-npm run ios        # iOS simulator
-npm run web        # Web preview
-```
-
-### Production
-```bash
-eas build --platform ios
-eas build --platform android
-eas submit --platform ios
-eas submit --platform android
-```
-
----
-
-## 🔒 Güvenlik
-
-- **Auth**: JWT token (AsyncStorage'da saklanır)
-- **API**: HTTPS + token doğrulama
-- **Konum**: Kullanıcı izni gerekli (GPS)
-- **Depolama**: AsyncStorage (cihaz veritabanı)
-- **Env**: .env.local (git'te yok)
-
----
-
-## ✅ Teslimat Kontrol Listesi
-
-- [ ] Expo proje yapısı kurulmuş
-- [ ] TypeScript konfigürasyonu düzgün
-- [ ] Tüm paketler yüklü ve working
-- [ ] .env.example oluşturulmuş
-- [ ] Backend bağlantısı test edilmiş
-- [ ] İlk ekranlar tasarıma uygun
-- [ ] Navigasyon düzgün çalışıyor
-- [ ] Jest/ESLint konfigüre edilmiş
+| Bileşen | Açıklama |
+|---------|---------|
+| `Button` | Birincil / ikincil / tehlike varyantları |
+| `Input` | Etiket, hata mesajı, ikon destekli |
+| `Card` | Genel kart sarmalayıcı |
+| `Badge` | İhtiyaç türü etiketi (`getNeedLabel` yardımcısı) |
+| `Feedback` | Alert banner, loading, error state |
+| `Progress` | ProgressBar (talep adım göstergesi) |
