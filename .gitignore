@@ -237,3 +237,18 @@ backups/
 SUNUM_BILAL.md
 BILAL_KATKILARIM.md
 
+# Microsoft Word temporary/lock files
+~$*.doc
+~$*.docx
+~$*.xlsx
+~WRL*.tmp
+*.tmp
+
+# IEEE conference template (binary, not needed in repo)
+conference-template-a4*.docx
+
+# Old/duplicate article Word files
+RESQ_IEEE_MAKALE_DUZELTILMIS.docx
+
+# IEEE article folder (scripts, figures — generated locally)
+makale/

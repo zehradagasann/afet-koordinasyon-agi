@@ -1,377 +1,289 @@
-# Afet Koordinasyon Ağı
-![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
-![Node](https://img.shields.io/badge/node-18+-green.svg)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+<div align="center">
 
-Gerçek zamanlı afet yönetimi ve koordinasyon sistemi. AI destekli araç önerisi, dinamik önceliklendirme ve kümeleme algoritmaları ile afet durumlarında hızlı ve etkili müdahale sağlar.
+# 🆘 RESQ
+### Real-time Emergency Safety & Coordination System
 
-## 🚀 Hızlı Başlangıç
+*Gerçek Zamanlı Afet Güvenlik ve Koordinasyon Sistemi*
 
-### Docker ile Kurulum (Önerilen - En Kolay)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Async-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+PostGIS-336791?style=flat-square&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)](https://react.dev)
+[![Expo](https://img.shields.io/badge/Expo_SDK-54-000020?style=flat-square&logo=expo)](https://expo.dev)
+[![License](https://img.shields.io/badge/Lisans-MIT-22c55e?style=flat-square)](LICENSE)
 
-Tüm sistemi tek komutla başlatın:
+**500 kullanıcılı stres testinde POST hata oranı %100 → %0.37'ye düştü (270× iyileştirme)**
+
+[Kurulum](#-kurulum) · [Özellikler](#-özellikler) · [Algoritmalar](#-algoritmalar) · [Ekran Görüntüleri](#-ekran-görüntüleri) · [Makale](#-akademik-makale) · [Ekip](#-ekip)
+
+</div>
+
+---
+
+## 🎯 Nedir?
+
+RESQ; afetle ilk anda karşılaşan vatandaşlardan, koordinatörlere ve saha ekiplerine uzanan **üç katmanlı bir kriz yönetim platformudur.**
+
+| Kullanıcı | Arayüz | Görev |
+|---|---|---|
+| 🧑‍💻 Koordinatör | React Web Paneli | Kümeleri yönet, araç gönder, haritayı izle |
+| 🙋 Gönüllü | React Web Paneli | Aktif talepleri gör, harita görünümü |
+| 📱 Afetzede | React Native Mobil | 4 adımda yardım talebi oluştur |
+
+Sistem gelen ihbarları **güven skoru algoritmasıyla** filtreler, doğrulanmış istekleri **DBSCAN ile coğrafi kümelere** dönüştürür ve koordinatöre **MCDM ile en uygun aracı** otomatik önerir.
+
+---
+
+## 🚀 Kurulum
+
+### Docker ile (Önerilen)
 
 ```bash
-# Tüm servisleri başlat (PostgreSQL + Backend + Frontend)
+git clone https://github.com/BilalAbic/afet-koordinasyon-agi.git
+cd afet-koordinasyon-agi
+cp .env.example .env          # .env dosyasını düzenle
+
 docker-compose up -d
-
-# Logları izle
-docker-compose logs -f
-
-# Durdur
-docker-compose down
-
-# Veritabanı ile birlikte temizle
-docker-compose down -v
 ```
 
-Servisler:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-- PostgreSQL: localhost:5432
+| Servis | Adres |
+|---|---|
+| 🌐 Web Paneli | http://localhost:5173 |
+| ⚙️ Backend API | http://localhost:8000 |
+| 📖 Swagger Docs | http://localhost:8000/docs |
+
+```bash
+docker-compose logs -f        # logları izle
+docker-compose down -v        # durdur ve temizle
+```
 
 ### Manuel Kurulum
 
-#### Gereksinimler
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL 14+
-- PostGIS extension
+<details>
+<summary>Adım adım göster</summary>
 
-### Backend Kurulumu
+**Gereksinimler:** Python 3.11+, Node.js 18+, PostgreSQL 14+ (PostGIS)
+
 ```bash
+# 1 — Backend
 cd backend
 pip install -r requirements.txt
-
-# .env dosyası oluştur (.env.example'dan kopyala)
 cp ../.env.example ../.env
-# Ardından .env dosyasını düzenle
+uvicorn main:app --reload     # http://localhost:8000
 
-# Migration'ları çalıştır
-psql -U user -d afet_koordinasyon -f migrations/add_base_speed_to_vehicles.sql
-
-# Sunucuyu başlat
-uvicorn main:app --reload
-```
-
-API: http://localhost:8000  
-Swagger Dokümantasyon: http://localhost:8000/docs
-
-### Frontend Kurulumu
-```bash
+# 2 — Web Paneli
 cd kriz-paneli
+npm install && npm run dev    # http://localhost:5173
+
+# 3 — Mobil Uygulama
+cd mobile
 npm install
-npm run dev
+npx expo start                # Expo Go ile QR okut
 ```
 
-Frontend: http://localhost:5173
-
-## 📋 Özellikler
-
-### Temel Özellikler
-- **Kullanıcı Yönetimi**: JWT tabanlı kimlik doğrulama ve rol bazlı yetkilendirme
-  - Roller: Vatandaş, Gönüllü, Koordinatör, Yönetici
-  - Profil yönetimi ve güncelleme
-  - Güvenli şifre hashleme (bcrypt)
-
-- **Afet İhbar Sistemi**: Gerçek zamanlı ihbar oluşturma ve takip
-  - Coğrafi konum bazlı ihbarlar
-  - Otomatik deprem doğrulama (AFAD/Kandilli verileri)
-  - İhtiyaç tipi kategorilendirme
-
-- **Dinamik Önceliklendirme**: Zaman ve aciliyet bazlı skorlama
-  - Otomatik öncelik hesaplama
-  - Kritik/Yüksek/Orta/Düşük seviyelendirme
-  - Zaman faktörü ile dinamik güncelleme
-
-- **DBSCAN Kümeleme**: Coğrafi yakınlık bazlı görev paketleri
-  - Otomatik küme oluşturma
-  - Adres bilgisi zenginleştirme (reverse geocoding)
-  - Küme durumu takibi
-
-- **Takım Yönetimi**: Ekip oluşturma ve görevlendirme
-  - Kapasite yönetimi
-  - Konum bazlı atama
-  - Performans takibi
-
-### Gelişmiş Özellikler
-
-#### 🚗 Otonom Araç Önerisi Sistemi
-AI destekli çok kriterli karar verme (MCDM) algoritması ile en uygun aracı otomatik önerir.
-
-**Algoritma Kriterleri:**
-- Aciliyet: %40 (Kümenin öncelik skoru)
-- Mesafe: %27 (ETA hesaplaması)
-- Stok Yeterliliği: %18 (Gerekli malzeme kontrolü)
-- Araç Hızı: %15 (Hızlı müdahale)
-
-**Örnek Kullanım:**
-```
-Küme: 20 kişi, barınma ihtiyacı
-Sistem Önerisi: "Bu kümenin 5 çadır ihtiyacı var. En yakın ve stokta 
-en az 5 çadır olan araç: Kamyon (10 Ton). Mesafe: 5.2 km, 
-Tahmini Varış: 8 dakika. Skor: 87.5/100"
+**`.env` içeriği:**
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/afet_koordinasyon
+SECRET_KEY=uretim-ortaminda-guclu-bir-anahtar-kullan
 ```
 
-#### ⏱️ Tahmini Varış Süresi (ETA) Hesaplama
-Haversine formülü ile hassas mesafe hesaplama ve gerçekçi varış süresi tahmini.
+> Detaylı kurulum: [backend/README.md](backend/README.md) · [Docker Rehberi](DOCKER_SETUP.md)
 
-**Hesaplama Yöntemi:**
+</details>
+
+---
+
+## ✨ Özellikler
+
+- **🔐 4 Rol RBAC** — Vatandaş (yalnızca mobil), Gönüllü, Koordinatör, Yönetici — JWT (HS256, 7 günlük)
+- **📡 Gerçek Zamanlı WebSocket** — Koordinatör panelinde canlı güncelleme
+- **📴 Çevrimdışı Mod** — Mobil uygulama NetInfo ile talepleri kuyruğa alır, bağlantı gelince senkronize eder
+- **🗺️ Reverse Geocoding** — geopy / Nominatim koordinatları okunabilir adrese çevirir
+- **📊 Sphere Standartları** — Stok yeterliliği Sphere El Kitabı minimumlarına göre hesaplanır (15 L/kişi/gün)
+- **🌡️ Bağlamsal Bonuslar** — Soğuk (<0°C) +30 pt, aşırı sıcak (>35°C) +15 pt, araç yok +20 pt
+
+---
+
+## 🧠 Algoritmalar
+
+### 1 — Güven Skoru T(r)
+
+Her ihbar işleme hattına girmeden önce 0–1 arasında puanlanır:
+
 ```
-ETA (dakika) = (Mesafe × Afet Düzeltme Katsayısı) / Araç Hızı × 60
-```
+T(r) = 0.60·S_seismic + 0.25·S_ip + 0.15·S_loc
 
-**Özellikler:**
-- Haversine formülü ile kuş uçuşu mesafe
-- Afet koşulları düzeltmesi (×1.2 katsayı)
-- Kritik durumlarda hız optimizasyonu (%10 artış)
-- Araç tipine göre hız ayarlaması
+  S_seismic  = max(0, 1 − d_min/50)         Kandilli son 24s deprem mesafesi (km)
+  S_ip       = 0.5·S_freq + 0.5·S_dist      spam & koordinat sıçrama tespiti
+  S_loc      = 1.0 / 0.5 / 0.0             TR içi / ±1° tampon / dışarı
 
-## 🧪 Testler
-
-```bash
-cd backend
-
-# Kimlik doğrulama testleri
-python tests/test_auth.py
-
-# Güven skoru testleri
-python tests/test_trust_scorer.py
-
-# Araç önerisi ve ETA testleri
-python tests/test_vehicle_recommendation.py
-
-# Entegrasyon testleri
-python tests/test_integration.py
-```
-
-### Test Sonuçları
-
-#### ✅ Güven Skoru Test Süiti (7/7 Başarılı)
-Güven skoru algoritmasının tüm bileşenleri test edildi:
-- Haversine mesafe hesaplama
-- Sismik skor (deprem örtüşme analizi)
-- IP davranış skoru (spam ve teleport tespiti)
-- Konum tutarlılığı (Türkiye sınırları)
-- Bileşik güven skoru hesaplama
-- Gerçek dünya senaryoları (Kahramanmaraş depremi)
-- Bot saldırısı simülasyonu
-
-**Örnek Sonuçlar:**
-- Gerçek ihbar (deprem bölgesi): Güven skoru 0.9150 → ✅ Doğrulandı
-- Sahte ihbar (yurtdışı): Güven skoru 0.0893 → ❌ Reddedildi
-- Bot saldırısı (10 istek): Güven skoru 0.1953 → ❌ Engellendi
-
-## 📚 Dokümantasyon
-
-- [Backend README](backend/README.md) - Backend detaylı kurulum ve kullanım
-- [API Dokümantasyonu](backend/docs/API.md) - Tüm endpoint'ler ve örnekler
-- [Veritabanı Şeması](backend/docs/DATABASE_SCHEMA.md) - ER diagram ve ilişkiler
-- [Güven Skoru Test Raporu](backend/TRUST_SCORER_TEST_REPORT.md) - Detaylı test sonuçları ve analiz
-- [Docker Kurulum Rehberi](DOCKER_SETUP.md) - Docker ile hızlı başlangıç
-
-## 🎯 API Kullanım Örnekleri
-
-### Otonom Araç Önerisi
-```bash
-GET /requests/task-packages/{cluster_id}/recommend-vehicles?top_n=3
+  Eşik: T(r) ≥ 0.50  →  is_verified = True
 ```
 
-**Yanıt:**
-```json
-{
-  "vehicle_type": "Kamyon",
-  "capacity": "10 Ton",
-  "score": 87.5,
-  "details": {
-    "distance_km": 5.2,
-    "eta_minutes": 8,
-    "available_stock": 100,
-    "required_quantity": 50,
-    "stock_score": 100.0,
-    "distance_score": 85.3,
-    "speed_score": 75.0,
-    "urgency_score": 82.5
-  },
-  "recommendation_text": "Bu kümenin 50 çadır ihtiyacı var. En yakın araç: Kamyon..."
-}
+### 2 — Dinamik Önceliklendirme P(t)
+
+```
+P(t) = S_base + (S_base · λ · t / M) · (1 + C_i)    λ = 1.5
 ```
 
-### Araç Atama ve ETA Hesaplama
-```bash
-POST /requests/task-packages/{cluster_id}/assign-vehicle?vehicle_id={vehicle_id}
+Puan zamanla büyür; kuyruk açlığını önler. Yangın (M=1s) hızla, gıda (M=168s) yavaş tırmanır.
+
+### 3 — DBSCAN Kümeleme
+
+```
+ε = 500 m  →  500/6.371.000 rad    minPts = 2    metrik = Haversine (BallTree)
 ```
 
-**Yanıt:**
-```json
-{
-  "message": "Araç başarıyla atandı",
-  "distance_km": 5.2,
-  "eta_minutes": 8,
-  "remaining_stock": 50,
-  "cluster_status": "resolved"
-}
+### 4 — MCDM Araç Seçimi
+
+```
+Puan = 0.40·aciliyet + 0.27·mesafe + 0.18·stok + 0.15·hız
+ETA  = (Haversine_km × 1.2) / hız × 60  [dakika]
 ```
 
-## 📁 Proje Yapısı (Modüler Mimari)
+### 5 — Circuit Breaker (Kandilli Observatory API)
+
+```
+KAPALI ──3 hata──► AÇIK ──60s──► YARI_AÇIK ──başarı──► KAPALI
+                     └── TTL önbellekli sismik veri (60s) ──┘
+```
+
+---
+
+## 📊 Yük Testi Sonuçları
+
+| Senaryo | Kullanıcı | POST Hata Oranı | Medyan | Sonuç |
+|---|---|---|---|---|
+| Normal yük | 50 | %0 | 3 ms | ✅ Kararlı |
+| Stres — v1 | 500 | **%100** | 4.100 ms | ❌ Çöktü |
+| Stres — v2 | 500 | **%0.37** | 2.100 ms | ✅ 270× iyileştirme |
+
+Araç: [Locust v2.43.4](https://locust.io) — **Optimizasyon:** Kandilli API'si için TTL önbellek (60s) + veritabanı bağlantı havuzu.
+
+---
+
+## 📸 Ekran Görüntüleri
+
+<details>
+<summary><b>🖥️ Koordinatör Web Paneli</b></summary>
+<br>
+
+| Ana Dashboard | Küme Yönetimi |
+|---|---|
+| ![Dashboard](ss/Koordinatör/web_coordinator_dashboard.png) | ![Kümeler](ss/Koordinatör/web_coordinator_clusters.png) |
+| KPI metrikleri & AI yönlendirme uyarısı | DBSCAN çıktısı, tek tıkla araç gönderme |
+
+| Taktik Harita | Doğrulanmamış Kuyruk | Araçlar |
+|---|---|---|
+| ![Harita](ss/Koordinatör/web_coordinator_map.png) | ![Doğrulanmamış](ss/Koordinatör/web_coordinator_unverified.png) | ![Araçlar](ss/Koordinatör/web_coordinator_vehicles.png) |
+
+</details>
+
+<details>
+<summary><b>🙋 Gönüllü Web Paneli</b></summary>
+<br>
+
+| Dashboard | Harita Görünümü |
+|---|---|
+| ![Gönüllü Dashboard](ss/Gönüllü/web_volunteer_dashboard.png) | ![Gönüllü Harita](ss/Gönüllü/web_volunteer_map.png) |
+
+</details>
+
+<details>
+<summary><b>📱 Mobil Uygulama (Afetzede)</b></summary>
+<br>
+
+| Ana Ekran | GPS — Adım 1/4 | İhtiyaç Tipi — Adım 3/4 | Talep Takibi |
+|---|---|---|---|
+| ![Ana](ss/afetzede/mobile_home.jpeg) | ![GPS](ss/afetzede/mobile_gps_step1.jpeg) | ![İhtiyaç](ss/afetzede/mobile_need_type_step3.jpeg) | ![Takip](ss/afetzede/mobile_request_tracking.jpeg) |
+
+*Web paneline giren vatandaşlar mobil uygulamaya yönlendirilir:*
+
+![Yönlendirme](ss/afetzede/web_citizen_redirect.png)
+
+</details>
+
+---
+
+## 📄 Akademik Makale
+
+Bu sistem, IEEE konferans makalesi olarak hazırlandı.
+
+> **Başlık:** *RESQ: A Multi-Layer Trust Verification and Spatial Clustering Architecture for Real-Time Disaster Coordination*
+> **Kurum:** Fırat Üniversitesi, Yazılım Mühendisliği Bölümü, 2026
+
+📥 **[RESQ_IEEE_MAKALE.docx](RESQ_IEEE_MAKALE.docx)** — IEEE A4 formatında tam makale
+
+---
+
+## 📁 Proje Yapısı
 
 ```
 afet-koordinasyon-agi/
-├── backend/                          # FastAPI Backend
-│   ├── core/                         # Merkezi Bağımlılıklar
-│   │   ├── __init__.py
-│   │   └── dependencies.py           # Database session yönetimi
-│   │
-│   ├── utils/                        # Yardımcı Fonksiyonlar
-│   │   ├── __init__.py
-│   │   ├── geo.py                   # Coğrafi hesaplamalar
-│   │   └── websocket.py             # WebSocket yönetimi
-│   │
-│   ├── services/                     # İş Mantığı Servisleri
-│   │   ├── __init__.py
-│   │   ├── priority.py              # Dinamik önceliklendirme
-│   │   ├── clustering.py            # DBSCAN kümeleme
-│   │   └── vehicle_recommendation.py # Araç önerisi ve ETA
-│   │
-│   ├── routers/                      # API Endpoint'leri
-│   │   ├── auth.py                   # Kimlik doğrulama
-│   │   ├── clusters.py               # Kümeleme ve araç önerisi
-│   │   ├── requests.py               # İhbar yönetimi
-│   │   └── vehicles.py               # Araç CRUD
-│   │
-│   ├── scripts/                      # Yardımcı Scriptler
-│   │   └── generate_mock_data.py    # Test verisi oluşturucu
-│   │
-│   ├── tests/                        # Test dosyaları
-│   │   ├── test_auth.py
-│   │   ├── test_vehicle_recommendation.py
-│   │   └── test_integration.py
-│   │
-│   ├── docs/                         # Dokümantasyon
-│   │   ├── API.md
-│   │   └── DATABASE_SCHEMA.md
-│   │
-│   ├── migrations/                   # SQL migration'ları
-│   ├── models.py                     # Veritabanı modelleri
-│   ├── schemas.py                    # Pydantic şemaları
-│   ├── geocoder.py                   # Reverse geocoding
-│   ├── live_earthquake_data.py       # Deprem verileri
-│   └── main.py                       # FastAPI uygulaması
-│
-├── kriz-paneli/                      # React Frontend
-│   └── src/
-│       ├── components/               # UI bileşenleri
-│       │   ├── common/              # Ortak bileşenler
-│       │   ├── Dashboard.jsx
-│       │   ├── Header.jsx
-│       │   └── Sidebar.jsx
-│       ├── pages/                    # Sayfalar
-│       │   ├── Login.jsx
-│       │   ├── Register.jsx
-│       │   └── Profile.jsx
-│       ├── services/                 # API servisleri
-│       │   └── authService.js
-│       └── utils/                    # Yardımcı fonksiyonlar
-│           └── validation.js
-│
-└── .env                              # Ortam değişkenleri
+├── 📂 backend/            # FastAPI backend — API, servisler, modeller, testler
+├── 📂 kriz-paneli/        # React 18 + Leaflet — Koordinatör & Gönüllü web paneli
+├── 📂 mobile/             # React Native + Expo 54 — Afetzede mobil uygulaması
+├── 📂 ss/                 # Arayüz ekran görüntüleri (role ve ekrana göre)
+├── 📄 RESQ_IEEE_MAKALE.docx  # IEEE konferans makalesi
+├── 🐳 docker-compose.yml
+└── 📋 .env.example
 ```
 
-## 🔐 Güvenlik
+---
 
-- JWT token tabanlı kimlik doğrulama (7 gün geçerlilik)
-- Bcrypt ile şifre hashleme
-- CORS middleware
-- SQL injection koruması (SQLAlchemy ORM)
-- Input validasyonu (Pydantic)
-- Role-based access control (RBAC)
+## 🛠️ Teknoloji Yığını
 
-## 🛠️ Teknolojiler
+| Katman | Teknoloji |
+|---|---|
+| **API** | FastAPI (Python 3.11) · Async · JWT/RBAC · WebSocket |
+| **Veritabanı** | PostgreSQL 14 + PostGIS · SQLAlchemy |
+| **ML / Coğrafi** | scikit-learn DBSCAN · geopy · Haversine |
+| **Web Paneli** | React 18 · Leaflet · Vite · TailwindCSS |
+| **Mobil** | React Native · Expo SDK 54 · Zustand · TanStack Query |
+| **DevOps** | Docker Compose · Locust (yük testi) |
 
-### Backend
-- FastAPI - Modern, hızlı web framework
-- PostgreSQL + PostGIS - Coğrafi veritabanı
-- SQLAlchemy - ORM
-- Pydantic - Veri validasyonu
-- JWT - Token tabanlı auth
-- Bcrypt - Şifre hashleme
-- Scikit-learn - DBSCAN kümeleme
-- Geopy - Geocoding
+---
 
-### Frontend
-- React 18 - UI framework
-- Vite - Build tool
-- TailwindCSS - Styling
-- Leaflet - Harita görünümü
+## 📚 Dokümantasyon
 
-## 🌍 Ortam Değişkenleri
+| Döküman | Açıklama |
+|---|---|
+| [backend/README.md](backend/README.md) | Backend kurulum ve kullanım detayları |
+| [backend/docs/API.md](backend/docs/API.md) | Tüm endpoint'ler ve örnekler |
+| [backend/docs/DATABASE_SCHEMA.md](backend/docs/DATABASE_SCHEMA.md) | ER diyagramı ve ilişkiler |
+| [backend/docs/ARCHITECTURE.md](backend/docs/ARCHITECTURE.md) | Mimari detaylar |
+| [kriz-paneli/README.md](kriz-paneli/README.md) | Web paneli kurulumu |
+| [mobile/README.md](mobile/README.md) | Mobil uygulama kurulumu |
+| [DOCKER_SETUP.md](DOCKER_SETUP.md) | Docker ile hızlı başlangıç |
+| [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md) | Production deployment rehberi |
 
-`.env` dosyası oluşturun:
-```env
-# Veritabanı
-DATABASE_URL=postgresql://user:password@localhost:5432/afet_koordinasyon
-
-# Güvenlik
-SECRET_KEY=your-secret-key-change-in-production
-
-# CORS (Production için)
-ALLOWED_ORIGINS=https://yourdomain.com
-```
-
-## 📊 Algoritmalar
-
-### 1. Dinamik Önceliklendirme
-```python
-score = base_score × time_factor × verification_bonus
-```
-- Base score: İhtiyaç tipine göre (0-100)
-- Time factor: Zaman geçtikçe artar
-- Verification bonus: Doğrulanmış ihbarlar için +20%
-
-### 2. DBSCAN Kümeleme
-- Epsilon: 0.5 km (coğrafi yakınlık)
-- Min samples: 2 (minimum ihbar sayısı)
-- Metric: Haversine (küresel mesafe)
-
-### 3. Araç Önerisi (MCDM)
-```python
-total_score = (
-    urgency_score × 0.40 +
-    distance_score × 0.27 +
-    stock_score × 0.18 +
-    speed_score × 0.15
-)
-```
-
-### 4. ETA Hesaplama
-```python
-eta_minutes = (distance_km × 1.2) / vehicle_speed × 60
-```
-- Afet düzeltme katsayısı: 1.2
-- Kritik durumlarda: +10% hız
-
-## 🤝 Katkıda Bulunma
-
-1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit yapın (`git commit -m 'feat: Add amazing feature'`)
-4. Push yapın (`git push origin feature/amazing-feature`)
-5. Pull Request açın
-
-## 📝 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır.
+---
 
 ## 👥 Ekip
 
-- **Frontend Geliştirici & Proje Yöneticisi:** [@zehradagasann](https://github.com/zehradagasann)
-- **Backend Geliştiriciler:**
-  - [@BilalAbic](https://github.com/BilalAbic)
-  - [@Perihanceliko](https://github.com/Perihanceliko)
-  - [@MustafaBite](https://github.com/MustafaBite)
+| İsim | Rol |
+|---|---|
+| **Zehra Dağaşan** | Frontend & Proje Yöneticisi |
+| **Perihan Çelikoğlu** | Backend Geliştirici |
+| **Bilal Abiç** | Backend & Mobil Geliştirici |
+| **Mustafa Bite** | Backend Geliştirici |
+| **Muhammet Baykara** | Danışman — Fırat Üniversitesi |
 
-## 📞 İletişim
+---
 
-Proje ile ilgili sorularınız için issue açabilirsiniz.
+## 🤝 Katkıda Bulunma
+
+```bash
+git checkout -b feature/özellik-adı
+git commit -m "feat: Yeni özellik ekle"
+git push origin feature/özellik-adı
+# → Pull Request aç
+```
+
+---
+
+<div align="center">
+
+📝 MIT Lisansı · Fırat Üniversitesi Yazılım Mühendisliği · 2026
+
+</div>
