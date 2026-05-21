@@ -11,8 +11,13 @@
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)](https://react.dev)
 [![Expo](https://img.shields.io/badge/Expo_SDK-54-000020?style=flat-square&logo=expo)](https://expo.dev)
 [![License](https://img.shields.io/badge/Lisans-MIT-22c55e?style=flat-square)](LICENSE)
+[![Demo](https://img.shields.io/badge/🌐_Demo-Canlı-22c55e?style=flat-square)](https://afet-koordinasyon-agi.vercel.app/)
+[![APK](https://img.shields.io/badge/📱_APK-İndir-3DDC84?style=flat-square)](https://qr.bilalabic.com/afet-apk)
 
 **500 kullanıcılı stres testinde POST hata oranı %100 → %0.37'ye düştü (270× iyileştirme)**
+
+🌐 **[afet-koordinasyon-agi.vercel.app](https://afet-koordinasyon-agi.vercel.app/)** — Web Demo  
+📱 **[qr.bilalabic.com/afet-apk](https://qr.bilalabic.com/afet-apk)** — Android APK (Expo)
 
 [Kurulum](#-kurulum) · [Özellikler](#-özellikler) · [Algoritmalar](#-algoritmalar) · [Ekran Görüntüleri](#-ekran-görüntüleri) · [Makale](#-akademik-makale) · [Ekip](#-ekip)
 
@@ -192,6 +197,8 @@ Araç: [Locust v2.43.4](https://locust.io) — **Optimizasyon:** Kandilli API'si
 <details>
 <summary><b>📱 Mobil Uygulama (Afetzede)</b></summary>
 <br>
+
+> 📥 **Android APK:** [qr.bilalabic.com/afet-apk](https://qr.bilalabic.com/afet-apk)
 
 | Ana Ekran | GPS — Adım 1/4 | İhtiyaç Tipi — Adım 3/4 | Talep Takibi |
 |---|---|---|---|
